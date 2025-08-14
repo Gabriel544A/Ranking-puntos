@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranking de Pádel - Amigos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button.danger {
+            background-color: #e74c3c;
+        }
+        button.danger:hover {
+            background-color: #c0392b;
+        }
+        button.success {
+            background-color: #2ecc71;
+        }
+        button.success:hover {
+            background-color: #27ae60;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .player-management {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .player-management input {
+            flex-grow: 1;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .player-list {
+            margin-top: 20px;
+        }
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        .player-item:hover {
+            background-color: #f9f9f9;
+        }
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .player-rating {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .no-players {
+            color: #7f8c8d;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Ranking de Pádel - Amigos</h1>
+    
+    <div class="container">
+        <h2>Gestión de Jugadores</h2>
+        <div class="player-management">
+            <input type="text" id="newPlayerName" placeholder="Nombre del nuevo jugador">
+            <button id="addPlayerBtn" class="success">Agregar Jugador</button>
+        </div>
+        
+        <div class="player-list" id="playerList">
+            <!-- Lista de jugadores se cargará aquí -->
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Registrar Nuevo Partido</h2>
+        <form id="matchForm">
+            <div class="form-group">
+                <label for="player1">Jugador 1 (Pareja A):</label>
+                <select id="player1" required>
+                    <option value="">Seleccionar jugador</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="player2">Jugador 2 (Pareja A):</label>
+                <select id="player2" required>
+                    <option value="">Seleccionar jugador</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="player3">Jugador 1 (Pareja B):</label>
+                <select id="player3" required>
+                    <option value="">Seleccionar jugador</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="player4">Jugador 2 (Pareja B):</label>
+                <select id="player4" required>
+                    <option value="">Seleccionar jugador</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="scoreA">Puntos Pareja A:</label>
+                <input type="number" id="scoreA" min="0" max="100" required>
+            </div>
+            <div class="form-group">
+                <label for="scoreB">Puntos Pareja B:</label>
+                <input type="number" id="scoreB" min="0" max="100" required>
+            </div>
+            <div class="form-group full-width">
+                <label for="date">Fecha del partido:</label>
+                <input type="date" id="date" required>
+            </div>
+            <button type="submit" class="full-width">Registrar Partido</button>
+        </form>
+    </div>
+    
+    <div class="container">
+        <h2>Ranking Individual</h2>
+        <table id="rankingTable">
+            <thead>
+                <tr>
+                    <th>Posición</th>
+                    <th>Jugador</th>
+                    <th>Puntuación</th>
+                    <th>Partidos</th>
+                    <th>Victorias</th>
+                    <th>Derrotas</th>
+                    <th>% Victorias</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Los datos del ranking se cargarán aquí -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="container">
+        <h2>Historial de Partidos</h2>
+        <table id="matchesTable">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Pareja A</th>
+                    <th>Pareja B</th>
+                    <th>Resultado</th>
+                    <th>Ganadores</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Los partidos se cargarán aquí -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Datos iniciales
+        let players = [];
+        let matches = [];
+        let nextPlayerId = 1;
+        
+        // Inicialización al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPlayers();
+            loadMatches();
+            renderPlayersList();
+            renderPlayersDropdown();
+            renderRanking();
+            renderMatches();
+            
+            // Manejar el formulario de partido
+            document.getElementById('matchForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                registerMatch();
+            });
+            
+            // Manejar agregar nuevo jugador
+            document.getElementById('addPlayerBtn').addEventListener('click', function() {
+                addNewPlayer();
+            });
+        });
+        
+        // Cargar jugadores desde localStorage
+        function loadPlayers() {
+            const storedPlayers = localStorage.getItem('padelPlayers');
+            if (storedPlayers) {
+                players = JSON.parse(storedPlayers);
+                // Calcular el próximo ID disponible
+                if (players.length > 0) {
+                    nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
+                }
+            }
+        }
+        
+        // Cargar partidos desde localStorage
+        function loadMatches() {
+            const storedMatches = localStorage.getItem('padelMatches');
+            if (storedMatches) {
+                matches = JSON.parse(storedMatches);
+            }
+        }
+        
+        // Guardar jugadores en localStorage
+        function savePlayers() {
+            localStorage.setItem('padelPlayers', JSON.stringify(players));
+        }
+        
+        // Guardar partidos en localStorage
+        function saveMatches() {
+            localStorage.setItem('padelMatches', JSON.stringify(matches));
+        }
+        
+        // Agregar nuevo jugador
+        function addNewPlayer() {
+            const nameInput = document.getElementById('newPlayerName');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('Por favor ingresa un nombre para el jugador');
+                return;
+            }
+            
+            // Verificar si el jugador ya existe
+            if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                alert('Ya existe un jugador con ese nombre');
+                return;
+            }
+            
+            // Crear nuevo jugador
+            const newPlayer = {
+                id: nextPlayerId++,
+                name: name,
+                rating: 1000,
+                matches: 0,
+                wins: 0,
+                losses: 0
+            };
+            
+            players.push(newPlayer);
+            savePlayers();
+            
+            // Actualizar la UI
+            renderPlayersList();
+            renderPlayersDropdown();
+            renderRanking();
+            
+            // Limpiar campo de entrada
+            nameInput.value = '';
+        }
+        
+        // Eliminar jugador
+        function deletePlayer(playerId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este jugador? Esto también eliminará todos los partidos relacionados.')) {
+                // Eliminar jugador
+                players = players.filter(p => p.id !== playerId);
+                
+                // Eliminar partidos que incluían a este jugador
+                matches = matches.filter(match => 
+                    !match.teamA.includes(playerId) && !match.teamB.includes(playerId)
+                );
+                
+                // Recalcular ratings para todos los jugadores
+                recalculateAllRatings();
+                
+                // Guardar cambios
+                savePlayers();
+                saveMatches();
+                
+                // Actualizar la UI
+                renderPlayersList();
+                renderPlayersDropdown();
+                renderRanking();
+                renderMatches();
+            }
+        }
+        
+        // Recalcular todos los ratings desde cero
+        function recalculateAllRatings() {
+            // Resetear estadísticas de todos los jugadores
+            players.forEach(player => {
+                player.rating = 1000;
+                player.matches = 0;
+                player.wins = 0;
+                player.losses = 0;
+            });
+            
+            // Reprocesar todos los partidos en orden cronológico
+            const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            sortedMatches.forEach(match => {
+                // Actualizar puntuaciones basado en el partido
+                updateRatings(match, true);
+            });
+        }
+        
+        // Renderizar lista de jugadores
+        function renderPlayersList() {
+            const playerList = document.getElementById('playerList');
+            
+            if (players.length === 0) {
+                playerList.innerHTML = '<div class="no-players">No hay jugadores registrados</div>';
+                return;
+            }
+            
+            playerList.innerHTML = '';
+            
+            // Ordenar jugadores por nombre
+            const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
+            
+            sortedPlayers.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                
+                playerItem.innerHTML = `
+                    <div class="player-info">
+                        <span>${player.name}</span>
+                        <span class="player-rating">(${Math.round(player.rating)} pts)</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="danger" onclick="deletePlayer(${player.id})">Eliminar</button>
+                    </div>
+                `;
+                
+                playerList.appendChild(playerItem);
+            });
+        }
+        
+        // Renderizar jugadores en los dropdowns
+        function renderPlayersDropdown() {
+            const dropdowns = ['player1', 'player2', 'player3', 'player4'];
+            
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                dropdown.innerHTML = '<option value="">Seleccionar jugador</option>';
+                
+                // Ordenar jugadores por nombre
+                const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
+                
+                sortedPlayers.forEach(player => {
+                    const option = document.createElement('option');
+                    option.value = player.id;
+                    option.textContent = player.name;
+                    dropdown.appendChild(option);
+                });
+            });
+        }
+        
+        // Registrar un nuevo partido
+        function registerMatch() {
+            // Validar que hay al menos 4 jugadores
+            if (players.length < 4) {
+                alert('Debes tener al menos 4 jugadores registrados para registrar un partido');
+                return;
+            }
+            
+            // Obtener datos del formulario
+            const player1Id = parseInt(document.getElementById('player1').value);
+            const player2Id = parseInt(document.getElementById('player2').value);
+            const player3Id = parseInt(document.getElementById('player3').value);
+            const player4Id = parseInt(document.getElementById('player4').value);
+            const scoreA = parseInt(document.getElementById('scoreA').value);
+            const scoreB = parseInt(document.getElementById('scoreB').value);
+            const date = document.getElementById('date').value;
+            
+            // Validar que no hay jugadores repetidos
+            const uniquePlayers = new Set([player1Id, player2Id, player3Id, player4Id]);
+            if (uniquePlayers.size < 4) {
+                alert('No puede haber jugadores repetidos en un partido');
+                return;
+            }
+            
+            // Crear objeto de partido
+            const match = {
+                id: matches.length + 1,
+                date: date,
+                teamA: [player1Id, player2Id],
+                teamB: [player3Id, player4Id],
+                scoreA: scoreA,
+                scoreB: scoreB
+            };
+            
+            // Añadir a la lista de partidos
+            matches.push(match);
+            saveMatches();
+            
+            // Actualizar puntuaciones de los jugadores
+            updateRatings(match);
+            
+            // Actualizar la UI
+            renderRanking();
+            renderMatches();
+            renderPlayersList();
+            
+            // Limpiar formulario
+            document.getElementById('matchForm').reset();
+        }
+        
+        // Actualizar puntuaciones basado en el partido
+        function updateRatings(match, skipSaving = false) {
+            const K_FACTOR = 32; // Factor de ajuste (puedes modificarlo)
+            const SCALE_FACTOR = 400; // Factor de escala
+            
+            // Obtener jugadores
+            const player1 = players.find(p => p.id === match.teamA[0]);
+            const player2 = players.find(p => p.id === match.teamA[1]);
+            const player3 = players.find(p => p.id === match.teamB[0]);
+            const player4 = players.find(p => p.id === match.teamB[1]);
+            
+            // Si estamos recalculando, no incrementar los contadores de partidos
+            const incrementMatches = !skipSaving;
+            
+            // Calcular rating promedio de cada pareja
+            const teamARating = (player1.rating + player2.rating) / 2;
+            const teamBRating = (player3.rating + player4.rating) / 2;
+            
+            // Determinar resultado (0-1)
+            const scoreDiff = match.scoreA - match.scoreB;
+            const actualOutcome = scoreDiff > 0 ? 1 : 0;
+            
+            // Calcular resultado esperado (fórmula ELO)
+            const expectedOutcomeA = 1 / (1 + Math.pow(10, (teamBRating - teamARating) / SCALE_FACTOR));
+            const expectedOutcomeB = 1 - expectedOutcomeA;
+            
+            // Calcular factor de diferencia de puntos (0.5 a 1.5)
+            const maxDiff = Math.max(Math.abs(scoreDiff), 1);
+            const diffFactor = 0.5 + (maxDiff / (maxDiff + 10));
+            
+            // Actualizar puntuaciones
+            const ratingChangeA = K_FACTOR * diffFactor * (actualOutcome - expectedOutcomeA);
+            const ratingChangeB = K_FACTOR * diffFactor * ((1 - actualOutcome) - expectedOutcomeB);
+            
+            // Aplicar cambios a cada jugador
+            player1.rating += ratingChangeA;
+            player2.rating += ratingChangeA;
+            player3.rating += ratingChangeB;
+            player4.rating += ratingChangeB;
+            
+            // Actualizar estadísticas si no estamos recalculando
+            if (incrementMatches) {
+                player1.matches++;
+                player2.matches++;
+                player3.matches++;
+                player4.matches++;
+                
+                if (scoreDiff > 0) {
+                    player1.wins++;
+                    player2.wins++;
+                    player3.losses++;
+                    player4.losses++;
+                } else {
+                    player1.losses++;
+                    player2.losses++;
+                    player3.wins++;
+                    player4.wins++;
+                }
+            }
+            
+            // Guardar cambios
+            if (!skipSaving) {
+                savePlayers();
+            }
+        }
+        
+        // Renderizar el ranking
+        function renderRanking() {
+            const tableBody = document.querySelector('#rankingTable tbody');
+            tableBody.innerHTML = '';
+            
+            // Ordenar jugadores por rating
+            const sortedPlayers = [...players].sort((a, b) => b.rating - a.rating);
+            
+            sortedPlayers.forEach((player, index) => {
+                const winPercentage = player.matches > 0 ? (player.wins / player.matches * 100).toFixed(1) : 0;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${player.name}</td>
+                    <td>${Math.round(player.rating)}</td>
+                    <td>${player.matches}</td>
+                    <td>${player.wins}</td>
+                    <td>${player.losses}</td>
+                    <td>${winPercentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Renderizar historial de partidos
+        function renderMatches() {
+            const tableBody = document.querySelector('#matchesTable tbody');
+            tableBody.innerHTML = '';
+            
+            if (matches.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="5" style="text-align: center;">No hay partidos registrados</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            // Ordenar partidos por fecha (más reciente primero)
+            const sortedMatches = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedMatches.forEach(match => {
+                // Obtener jugadores (con verificación por si alguno fue eliminado)
+                const player1 = players.find(p => p.id === match.teamA[0]);
+                const player2 = players.find(p => p.id === match.teamA[1]);
+                const player3 = players.find(p => p.id === match.teamB[0]);
+                const player4 = players.find(p => p.id === match.teamB[1]);
+                
+                // Si algún jugador no existe (fue eliminado), saltar este partido
+                if (!player1 || !player2 || !player3 || !player4) return;
+                
+                // Formatear resultado
+                const result = `${match.scoreA}-${match.scoreB}`;
+                const winners = match.scoreA > match.scoreB ? 
+                    `${player1.name} & ${player2.name}` : `${player3.name} & ${player4.name}`;
+                
+                // Formatear fecha
+                const dateObj = new Date(match.date);
+                const formattedDate = dateObj.toLocaleDateString('es-ES');
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${player1.name} & ${player2.name}</td>
+                    <td>${player3.name} & ${player4.name}</td>
+                    <td>${result}</td>
+                    <td>${winners}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
