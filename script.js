@@ -5,6 +5,7 @@ let nextPlayerId = 1;
 let currentEditingPlayerId = null;
 let selectedColor = '#3498db';
 let playerToDelete = null;
+let lastSyncTimestamp = 0;
 
 // Función para calcular promedio de puntos
 function calculateAveragePoints(player) {
@@ -22,6 +23,9 @@ document.addEventListener('DOMContentLoaded', function() {
     renderRanking();
     renderMatches();
     updateStats();
+    
+    // Configurar sincronización periódica
+    setInterval(syncData, 30000); // Sincronizar cada 30 segundos
     
     // Manejar el formulario de partido
     document.getElementById('matchForm').addEventListener('submit', function(e) {
@@ -99,6 +103,11 @@ document.addEventListener('DOMContentLoaded', function() {
         editModal.style.display = 'block';
         playerToDelete = null;
     });
+    
+    // Configurar evento para sincronizar antes de cerrar la página
+    window.addEventListener('beforeunload', function() {
+        syncData();
+    });
 });
 
 // Cargar jugadores desde localStorage
@@ -118,6 +127,12 @@ function loadPlayers() {
             }
         });
     }
+    
+    // Cargar timestamp de última sincronización
+    const lastSync = localStorage.getItem('lastSyncTimestamp');
+    if (lastSync) {
+        lastSyncTimestamp = parseInt(lastSync);
+    }
 }
 
 // Cargar partidos desde localStorage
@@ -131,11 +146,155 @@ function loadMatches() {
 // Guardar jugadores en localStorage
 function savePlayers() {
     localStorage.setItem('padelPlayers', JSON.stringify(players));
+    // Actualizar timestamp de sincronización
+    lastSyncTimestamp = Date.now();
+    localStorage.setItem('lastSyncTimestamp', lastSyncTimestamp);
 }
 
 // Guardar partidos en localStorage
 function saveMatches() {
     localStorage.setItem('padelMatches', JSON.stringify(matches));
+    // Actualizar timestamp de sincronización
+    lastSyncTimestamp = Date.now();
+    localStorage.setItem('lastSyncTimestamp', lastSyncTimestamp);
+}
+
+// Sincronizar datos con almacenamiento persistente
+function syncData() {
+    try {
+        // Intentar cargar datos más recientes
+        const storedTimestamp = localStorage.getItem('lastSyncTimestamp');
+        if (storedTimestamp) {
+            const timestamp = parseInt(storedTimestamp);
+            
+            // Si hay datos más recientes en localStorage, cargarlos
+            if (timestamp > lastSyncTimestamp) {
+                loadPlayers();
+                loadMatches();
+                renderPlayersList();
+                renderPlayersDropdown();
+                renderRanking();
+                renderMatches();
+                updateStats();
+                console.log('Datos sincronizados desde almacenamiento local');
+            }
+        }
+        
+        // Guardar datos actuales
+        savePlayers();
+        saveMatches();
+        
+        // Verificar si hay datos en IndexedDB para respaldo adicional
+        backupToIndexedDB();
+        
+        return true;
+    } catch (error) {
+        console.error('Error al sincronizar datos:', error);
+        return false;
+    }
+}
+
+// Función para respaldar datos en IndexedDB (almacenamiento más robusto)
+function backupToIndexedDB() {
+    // Verificar si IndexedDB está disponible
+    if (!window.indexedDB) {
+        console.log('Este navegador no soporta IndexedDB');
+        return;
+    }
+    
+    // Abrir o crear base de datos
+    const request = indexedDB.open('PadelRankingDB', 1);
+    
+    request.onerror = function(event) {
+        console.error('Error al abrir IndexedDB:', event.target.error);
+    };
+    
+    request.onupgradeneeded = function(event) {
+        const db = event.target.result;
+        
+        // Crear almacenes de objetos si no existen
+        if (!db.objectStoreNames.contains('players')) {
+            db.createObjectStore('players', { keyPath: 'id' });
+        }
+        
+        if (!db.objectStoreNames.contains('matches')) {
+            db.createObjectStore('matches', { keyPath: 'id' });
+        }
+    };
+    
+    request.onsuccess = function(event) {
+        const db = event.target.result;
+        const transaction = db.transaction(['players', 'matches'], 'readwrite');
+        
+        // Almacenar jugadores
+        const playersStore = transaction.objectStore('players');
+        players.forEach(player => {
+            playersStore.put(player);
+        });
+        
+        // Almacenar partidos
+        const matchesStore = transaction.objectStore('matches');
+        matches.forEach(match => {
+            matchesStore.put(match);
+        });
+        
+        transaction.oncomplete = function() {
+            console.log('Respaldo en IndexedDB completado');
+        };
+        
+        transaction.onerror = function(event) {
+            console.error('Error en transacción de IndexedDB:', event.target.error);
+        };
+    };
+}
+
+// Función para recuperar datos desde IndexedDB si localStorage falla
+function recoverFromIndexedDB() {
+    if (!window.indexedDB) {
+        return false;
+    }
+    
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('PadelRankingDB', 1);
+        
+        request.onerror = function() {
+            reject(new Error('No se pudo abrir IndexedDB'));
+        };
+        
+        request.onsuccess = function(event) {
+            const db = event.target.result;
+            const transaction = db.transaction(['players', 'matches'], 'readonly');
+            const playersStore = transaction.objectStore('players');
+            const matchesStore = transaction.objectStore('matches');
+            
+            const playersRequest = playersStore.getAll();
+            const matchesRequest = matchesStore.getAll();
+            
+            playersRequest.onsuccess = function() {
+                if (playersRequest.result.length > 0) {
+                    players = playersRequest.result;
+                    if (players.length > 0) {
+                        nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
+                    }
+                }
+            };
+            
+            matchesRequest.onsuccess = function() {
+                if (matchesRequest.result.length > 0) {
+                    matches = matchesRequest.result;
+                }
+            };
+            
+            transaction.oncomplete = function() {
+                console.log('Datos recuperados desde IndexedDB');
+                resolve(true);
+            };
+            
+            transaction.onerror = function() {
+                reject(new Error('Error al recuperar datos desde IndexedDB'));
+            };
+        };
+    });
 }
 
 // Actualizar estadísticas generales
@@ -172,9 +331,27 @@ function addNewPlayer() {
         return;
     }
     
-    // Verificar si el jugador ya existe
-    if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-        alert('Ya existe un jugador con ese nombre');
+    // Verificar si el jugador ya existe (búsqueda insensible a mayúsculas/minúsculas)
+    const existingPlayerIndex = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+    
+    if (existingPlayerIndex >= 0) {
+        // Si el jugador existe, mostrar confirmación para actualizar
+        if (confirm(`El jugador "${name}" ya existe. ¿Deseas actualizar sus datos?`)) {
+            // Mantener datos históricos y solo actualizar el nombre si hay cambios de capitalización
+            if (players[existingPlayerIndex].name !== name) {
+                players[existingPlayerIndex].name = name;
+                savePlayers();
+                syncData();
+                
+                // Actualizar la UI
+                renderPlayersList();
+                renderPlayersDropdown();
+                renderRanking();
+                renderMatches();
+                updateStats();
+            }
+        }
+        nameInput.value = '';
         return;
     }
     
@@ -187,11 +364,14 @@ function addNewPlayer() {
         wins: 0,
         losses: 0,
         pointsHistory: [],
-        color: '#3498db'
+        color: selectedColor || '#3498db',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
     };
     
     players.push(newPlayer);
     savePlayers();
+    syncData(); // Sincronizar después de agregar un jugador
     
     // Actualizar la UI
     renderPlayersList();
@@ -232,13 +412,28 @@ function savePlayerChanges() {
         return;
     }
     
+    // Verificar si el nombre ya existe en otro jugador
+    const existingPlayer = players.find(p => 
+        p.id !== currentEditingPlayerId && 
+        p.name.toLowerCase() === newName.toLowerCase()
+    );
+    
+    if (existingPlayer) {
+        alert(`Ya existe otro jugador con el nombre "${newName}"`);
+        return;
+    }
+    
     const playerIndex = players.findIndex(p => p.id === currentEditingPlayerId);
     if (playerIndex === -1) return;
     
+    // Actualizar datos del jugador
     players[playerIndex].name = newName;
     players[playerIndex].color = selectedColor;
+    players[playerIndex].updatedAt = Date.now();
     
     savePlayers();
+    syncData(); // Sincronizar después de actualizar un jugador
+    
     renderPlayersList();
     renderPlayersDropdown();
     renderRanking();
@@ -261,6 +456,7 @@ function deletePlayer(playerId) {
     // Guardar cambios
     savePlayers();
     saveMatches();
+    syncData(); // Sincronizar después de eliminar un jugador
     
     // Actualizar la UI
     renderPlayersList();
@@ -363,7 +559,9 @@ function registerMatch() {
         teamA: [player1Id, player2Id],
         teamB: [player3Id, player4Id],
         scoreA: scoreA,
-        scoreB: scoreB
+        scoreB: scoreB,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
     };
     
     // Añadir a la lista de partidos
@@ -372,6 +570,9 @@ function registerMatch() {
     
     // Actualizar puntuaciones de los jugadores
     updateRatings(match);
+    
+    // Sincronizar datos
+    syncData();
     
     // Actualizar la UI
     renderRanking();
@@ -455,8 +656,15 @@ function updateRatings(match) {
     player3.matches++;
     player4.matches++;
     
+    // Actualizar timestamps
+    player1.updatedAt = Date.now();
+    player2.updatedAt = Date.now();
+    player3.updatedAt = Date.now();
+    player4.updatedAt = Date.now();
+    
     // Guardar cambios
     savePlayers();
+    // No es necesario llamar a syncData() aquí porque ya se llama en registerMatch()
 }
 
 // Renderizar el ranking (versión compacta para sidebar)
