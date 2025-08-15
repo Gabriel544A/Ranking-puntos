@@ -6,6 +6,13 @@ let currentEditingPlayerId = null;
 let selectedColor = '#3498db';
 let playerToDelete = null;
 
+// Función para calcular promedio de puntos
+function calculateAveragePoints(player) {
+    if (!player.pointsHistory || player.pointsHistory.length === 0) return 0;
+    const sum = player.pointsHistory.reduce((total, points) => total + points, 0);
+    return sum / player.pointsHistory.length;
+}
+
 // Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     loadPlayers();
@@ -103,6 +110,13 @@ function loadPlayers() {
         if (players.length > 0) {
             nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
         }
+        
+        // Asegurarse que todos los jugadores tengan pointsHistory
+        players.forEach(player => {
+            if (!player.pointsHistory) {
+                player.pointsHistory = [];
+            }
+        });
     }
 }
 
@@ -130,8 +144,19 @@ function updateStats() {
     document.getElementById('totalMatches').textContent = matches.length;
     
     if (players.length > 0) {
-        const topPlayer = [...players].sort((a, b) => b.rating - a.rating)[0];
-        document.getElementById('topPlayer').textContent = `${topPlayer.name} (${Math.round(topPlayer.rating)} pts)`;
+        // Calcular jugador con mejor promedio (con al menos 1 partido)
+        const playersWithMatches = players.filter(p => p.matches > 0);
+        
+        if (playersWithMatches.length > 0) {
+            const playerWithBestAvg = [...playersWithMatches]
+                .sort((a, b) => calculateAveragePoints(b) - calculateAveragePoints(a))[0];
+            
+            const avg = calculateAveragePoints(playerWithBestAvg);
+            document.getElementById('topPlayer').textContent = 
+                `${playerWithBestAvg.name} (${avg.toFixed(1).replace('.', ',')} pts/partido)`;
+        } else {
+            document.getElementById('topPlayer').textContent = 'Ningún jugador con partidos';
+        }
     } else {
         document.getElementById('topPlayer').textContent = '-';
     }
@@ -153,7 +178,7 @@ function addNewPlayer() {
         return;
     }
     
-    // Crear nuevo jugador
+    // Crear nuevo jugador con pointsHistory
     const newPlayer = {
         id: nextPlayerId++,
         name: name,
@@ -161,6 +186,7 @@ function addNewPlayer() {
         matches: 0,
         wins: 0,
         losses: 0,
+        pointsHistory: [],
         color: '#3498db'
     };
     
@@ -259,13 +285,14 @@ function renderPlayersList() {
     const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
     
     sortedPlayers.forEach(player => {
+        const avgPoints = calculateAveragePoints(player);
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         
         playerItem.innerHTML = `
             <div class="player-info">
                 <span style="color: ${player.color || '#000'}">${player.name}</span>
-                <span class="player-rating">${Math.round(player.rating)} pts</span>
+                <span class="player-rating">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</span>
             </div>
             <div class="action-buttons">
                 <button class="btn-warning" onclick="editPlayer(${player.id})">
@@ -356,7 +383,7 @@ function registerMatch() {
     document.getElementById('matchForm').reset();
 }
 
-// Actualizar puntuaciones basado en el partido (solo sumar puntos)
+// Actualizar puntuaciones basado en el partido
 function updateRatings(match) {
     // Obtener jugadores
     const player1 = players.find(p => p.id === match.teamA[0]);
@@ -367,32 +394,55 @@ function updateRatings(match) {
     // Calcular diferencia de puntos
     const scoreDiff = Math.abs(match.scoreA - match.scoreB);
     
-    // Puntos base por ganar
-    const basePoints = 10;
-    
-    // Multiplicador por diferencia de puntos
+    // Puntos base
+    const winnerBasePoints = 3;
+    const loserBasePoints = 1;
     const diffMultiplier = 0.5;
     
     // Calcular puntos adicionales por diferencia
-    const extraPoints = Math.round(scoreDiff * diffMultiplier);
+    const extraPoints = scoreDiff * diffMultiplier;
+    
+    // Asegurarse que todos los jugadores tengan pointsHistory
+    if (!player1.pointsHistory) player1.pointsHistory = [];
+    if (!player2.pointsHistory) player2.pointsHistory = [];
+    if (!player3.pointsHistory) player3.pointsHistory = [];
+    if (!player4.pointsHistory) player4.pointsHistory = [];
     
     // Determinar qué equipo ganó
     if (match.scoreA > match.scoreB) {
         // Pareja A ganó
-        const totalPoints = basePoints + extraPoints;
-        player1.rating += totalPoints;
-        player2.rating += totalPoints;
+        const totalPointsWinner = winnerBasePoints + extraPoints;
+        player1.rating += totalPointsWinner;
+        player2.rating += totalPointsWinner;
+        player1.pointsHistory.push(totalPointsWinner);
+        player2.pointsHistory.push(totalPointsWinner);
         
+        // Pareja B perdió
+        player3.rating += loserBasePoints;
+        player4.rating += loserBasePoints;
+        player3.pointsHistory.push(loserBasePoints);
+        player4.pointsHistory.push(loserBasePoints);
+        
+        // Actualizar estadísticas
         player1.wins++;
         player2.wins++;
         player3.losses++;
         player4.losses++;
     } else {
         // Pareja B ganó
-        const totalPoints = basePoints + extraPoints;
-        player3.rating += totalPoints;
-        player4.rating += totalPoints;
+        const totalPointsWinner = winnerBasePoints + extraPoints;
+        player3.rating += totalPointsWinner;
+        player4.rating += totalPointsWinner;
+        player3.pointsHistory.push(totalPointsWinner);
+        player4.pointsHistory.push(totalPointsWinner);
         
+        // Pareja A perdió
+        player1.rating += loserBasePoints;
+        player2.rating += loserBasePoints;
+        player1.pointsHistory.push(loserBasePoints);
+        player2.pointsHistory.push(loserBasePoints);
+        
+        // Actualizar estadísticas
         player3.wins++;
         player4.wins++;
         player1.losses++;
@@ -409,26 +459,23 @@ function updateRatings(match) {
     savePlayers();
 }
 
-// Renderizar el ranking
+// Renderizar el ranking (versión compacta para sidebar)
 function renderRanking() {
     const tableBody = document.querySelector('#rankingTable tbody');
     tableBody.innerHTML = '';
     
-    // Ordenar jugadores por rating
+    // Ordenar jugadores por PUNTOS TOTALES descendente
     const sortedPlayers = [...players].sort((a, b) => b.rating - a.rating);
     
     sortedPlayers.forEach((player, index) => {
-        const winPercentage = player.matches > 0 ? (player.wins / player.matches * 100).toFixed(1) : 0;
-        
+        const avgPoints = calculateAveragePoints(player);
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
             <td style="color: ${player.color || '#000'}">${player.name}</td>
-            <td>${Math.round(player.rating)}</td>
+            <td>${player.rating.toFixed(1).replace('.', ',')}</td>
+            <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
             <td>${player.matches}</td>
-            <td>${player.wins}</td>
-            <td>${player.losses}</td>
-            <td>${winPercentage}%</td>
         `;
         tableBody.appendChild(row);
     });
