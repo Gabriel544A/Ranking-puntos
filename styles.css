@@ -639,10 +639,18 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
   * { transition: none !important; animation: none !important; }
 }
 
-/* Desplazar ligeramente la tabla de Ranking a la derecha para mejor alineación */
-.sidebar .container #rankingTable {
-  width: calc(100% - 20px);
-  margin-left: 20px; /* Empuja la tabla hacia la derecha */
+/* Alineación de tablas de ranking */
+#rankingTable th,
+#rankingTable td,
+#teamRankingTable th,
+#teamRankingTable td {
+  text-align: center;
+}
+
+/* Mantener la columna 'Jugador' alineada a la izquierda */
+#rankingTable th:nth-child(2),
+#rankingTable td:nth-child(2) {
+  text-align: left;
 }
 
 @media (max-width: 1024px) {
