@@ -25,8 +25,8 @@
         <div class="container">
             <h2>🎾 Gestión de Jugadores</h2>
             <div class="player-management">
-                <input type="text" id="newPlayerName" placeholder="Nombre del nuevo jugador">
-                <button id="addPlayerBtn" class="btn-success">
+                <input type="text" id="newPlayerName" placeholder="Nombre del nuevo jugador" style="display: none;">
+                <button id="addPlayerBtn" class="btn-success" style="display: none;">
                     <span>+</span> Agregar Jugador
                 </button>
             </div>
@@ -38,7 +38,7 @@
         
         <div class="container">
             <h2>📝 Registrar Nuevo Partido</h2>
-            <form id="matchForm">
+            <form id="matchForm" style="display: none;">
                 <div class="form-group">
                     <label for="player1">Jugador 1 (Pareja A):</label>
                     <select id="player1" required>
@@ -112,6 +112,9 @@
                     </button>
                     <button id="importDataBtn" class="btn-warning">
                         <span>📥</span> Importar Datos (JSON)
+                    </button>
+                    <button id="enableEditBtn" class="btn-success">
+                        <span>🔓</span> Habilitar Edición
                     </button>
                 </div>
             </div>
@@ -230,8 +233,6 @@
         </div>
     </div>
     
-
-
     <!-- Input oculto para importar archivo -->
     <input type="file" id="importFileInput" accept=".json" style="display: none;">
 

@@ -7,6 +7,50 @@ let selectedColor = '#3498db';
 let playerToDelete = null;
 let lastSyncTimestamp = 0;
 let teamStats = {}; // Para almacenar estadísticas de parejas
+let editModeEnabled = false;
+
+// Función para alternar el modo de edición
+function toggleEditMode(enabled) {
+    editModeEnabled = enabled;
+    
+    // Mostrar/ocultar elementos de edición
+    document.getElementById('addPlayerBtn').style.display = enabled ? 'flex' : 'none';
+    document.getElementById('newPlayerName').style.display = enabled ? 'block' : 'none';
+    document.getElementById('matchForm').style.display = enabled ? 'grid' : 'none';
+    
+    // Ocultar botones de eliminar
+    document.querySelectorAll('.delete-match-btn').forEach(btn => {
+        btn.style.display = enabled ? 'flex' : 'none';
+    });
+    
+    // Ocultar botones de edición de jugadores
+    document.querySelectorAll('.action-buttons button').forEach(btn => {
+        btn.style.display = enabled ? 'flex' : 'none';
+    });
+    
+    // Cambiar texto del botón
+    const enableEditBtn = document.getElementById('enableEditBtn');
+    if (enableEditBtn) {
+        enableEditBtn.innerHTML = enabled ? 
+            '<span>🔒</span> Deshabilitar Edición' : 
+            '<span>🔓</span> Habilitar Edición';
+    }
+    
+    // Guardar el estado en localStorage
+    localStorage.setItem('editModeEnabled', enabled.toString());
+}
+
+// Función para solicitar contraseña
+function requestPassword() {
+    const password = prompt('Ingrese la contraseña para habilitar el modo de edición:');
+    if (password === '544') {
+        toggleEditMode(true);
+        return true;
+    } else if (password !== null) {
+        alert('Contraseña incorrecta');
+    }
+    return false;
+}
 
 // Función para calcular promedio de puntos
 function calculateAveragePoints(player) {
@@ -203,17 +247,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Manejar el formulario de partido
     document.getElementById('matchForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        registerMatch();
+        if (editModeEnabled) {
+            registerMatch();
+        }
     });
     
     // Manejar agregar nuevo jugador
     document.getElementById('addPlayerBtn').addEventListener('click', function() {
-        addNewPlayer();
+        if (editModeEnabled) {
+            addNewPlayer();
+        }
     });
     
     // Manejar Enter en el campo de nuevo jugador
     document.getElementById('newPlayerName').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && editModeEnabled) {
             e.preventDefault();
             addNewPlayer();
         }
@@ -277,24 +325,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Manejar guardar cambios de jugador
     document.getElementById('saveEditBtn').addEventListener('click', function() {
-        savePlayerChanges();
+        if (editModeEnabled) {
+            savePlayerChanges();
+        }
     });
     
     // Manejar botón de eliminar jugador
     document.getElementById('deletePlayerBtn').addEventListener('click', function() {
-        const player = players.find(p => p.id === currentEditingPlayerId);
-        if (player) {
-            playerToDelete = player.id;
-            document.getElementById('deleteConfirmationText').textContent = 
-                `¿Estás seguro de que deseas eliminar a "${player.name}"? Esta acción eliminará todos sus partidos y no se puede deshacer.`;
-            confirmDeleteModal.style.display = 'block';
-            editModal.style.display = 'none';
+        if (editModeEnabled) {
+            const player = players.find(p => p.id === currentEditingPlayerId);
+            if (player) {
+                playerToDelete = player.id;
+                document.getElementById('deleteConfirmationText').textContent = 
+                    `¿Estás seguro de que deseas eliminar a "${player.name}"? Esta acción eliminará todos sus partidos y no se puede deshacer.`;
+                confirmDeleteModal.style.display = 'block';
+                editModal.style.display = 'none';
+            }
         }
     });
     
     // Manejar confirmación de eliminación
     document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-        if (playerToDelete) {
+        if (editModeEnabled && playerToDelete) {
             deletePlayer(playerToDelete);
             confirmDeleteModal.style.display = 'none';
             playerToDelete = null;
@@ -309,10 +361,27 @@ document.addEventListener('DOMContentLoaded', function() {
         playerToDelete = null;
     });
     
+    // Manejar botón de habilitar edición
+    document.getElementById('enableEditBtn').addEventListener('click', function() {
+        if (editModeEnabled) {
+            toggleEditMode(false);
+        } else {
+            requestPassword();
+        }
+    });
+    
     // Configurar evento para sincronizar antes de cerrar la página
     window.addEventListener('beforeunload', function() {
         syncData();
     });
+    
+    // Cargar estado del modo de edición
+    const savedEditMode = localStorage.getItem('editModeEnabled');
+    if (savedEditMode === 'true') {
+        toggleEditMode(true);
+    } else {
+        toggleEditMode(false);
+    }
 });
 
 // Cargar jugadores desde localStorage
@@ -562,6 +631,8 @@ function updateStats() {
 
 // Agregar nuevo jugador
 function addNewPlayer() {
+    if (!editModeEnabled) return;
+    
     const nameInput = document.getElementById('newPlayerName');
     const name = nameInput.value.trim();
     
@@ -624,6 +695,8 @@ function addNewPlayer() {
 
 // Abrir modal para editar jugador
 function editPlayer(playerId) {
+    if (!editModeEnabled) return;
+    
     const player = players.find(p => p.id === playerId);
     if (!player) return;
     
@@ -644,6 +717,8 @@ function editPlayer(playerId) {
 
 // Guardar cambios del jugador
 function savePlayerChanges() {
+    if (!editModeEnabled) return;
+    
     const newName = document.getElementById('editPlayerName').value.trim();
     
     if (!newName) {
@@ -685,6 +760,8 @@ function savePlayerChanges() {
 
 // Eliminar jugador
 function deletePlayer(playerId) {
+    if (!editModeEnabled) return;
+    
     // Eliminar jugador
     players = players.filter(p => p.id !== playerId);
     
@@ -709,6 +786,8 @@ function deletePlayer(playerId) {
 
 // Confirmar eliminación de partido
 function confirmDeleteMatch(matchId) {
+    if (!editModeEnabled) return;
+    
     if (confirm('¿Estás seguro de que deseas eliminar este partido? Esta acción no se puede deshacer.')) {
         deleteMatch(matchId);
     }
@@ -716,6 +795,8 @@ function confirmDeleteMatch(matchId) {
 
 // Eliminar partido
 function deleteMatch(matchId) {
+    if (!editModeEnabled) return;
+    
     // Encontrar el partido por ID
     const matchIndex = matches.findIndex(m => m.id === matchId);
     if (matchIndex === -1) return;
@@ -789,7 +870,7 @@ function renderPlayersList() {
                 <span class="player-rating">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</span>
             </div>
             <div class="action-buttons">
-                <button class="btn-warning" onclick="editPlayer(${player.id})">
+                <button class="btn-warning" onclick="editPlayer(${player.id})" style="display: none;">
                     <span>✏️</span> Editar
                 </button>
             </div>
@@ -847,6 +928,8 @@ function renderPlayersDropdown() {
 
 // Registrar un nuevo partido
 function registerMatch() {
+    if (!editModeEnabled) return;
+    
     // Validar que hay al menos 4 jugadores
     if (players.length < 4) {
         alert('Debes tener al menos 4 jugadores registrados para registrar un partido');
@@ -1146,7 +1229,7 @@ function renderMatches() {
             <td>${result}</td>
             <td>${winners}</td>
             <td>
-                <button class="btn-danger btn-small delete-match-btn" data-match-id="${match.id}">
+                <button class="btn-danger btn-small delete-match-btn" data-match-id="${match.id}" style="display: none;">
                     <span>🗑️</span>
                 </button>
             </td>

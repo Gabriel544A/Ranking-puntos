@@ -842,3 +842,18 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Estilos para el botón de habilitar edición */
+#enableEditBtn {
+    background: linear-gradient(180deg, #16a085, #1abc9c);
+}
+
+#enableEditBtn:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+}
+
+/* Ocultar elementos cuando no estén en modo edición */
+[style*="display: none"] {
+    display: none !important;
+}
