@@ -136,63 +136,33 @@
             </div>
             <div class="form-group">
                 <label>🎨 Color:</label>
-                <div class="color-picker-container">
-                    <!-- Rueda cromática interactiva -->
-                    <div class="color-wheel-container">
-                        <canvas id="colorWheel" width="200" height="200"></canvas>
-                        <div class="color-wheel-picker" id="wheelPicker"></div>
-                    </div>
-                    
-                    <!-- Controles de saturación y luminosidad -->
-                    <div class="color-controls">
-                        <div class="saturation-lightness-picker">
-                            <canvas id="saturationLightness" width="200" height="200"></canvas>
-                            <div class="sl-picker" id="slPicker"></div>
-                        </div>
-                        
-                        <!-- Preview del color seleccionado -->
-                        <div class="color-preview">
-                            <div class="selected-color" id="selectedColorPreview"></div>
-                            <input type="text" id="colorHexInput" placeholder="#3498db" maxlength="7">
-                        </div>
-                    </div>
-                    
-                    <!-- Toggle para mostrar colores predefinidos -->
-                    <div class="color-mode-toggle">
-                        <button type="button" id="toggleColorMode" class="btn-info">
-                            <span>🎯</span> Colores Predefinidos
-                        </button>
-                    </div>
-                    
-                    <!-- Colores predefinidos (ocultos por defecto) -->
-                    <div class="color-options" id="colorOptions" style="display: none;">
-                        <!-- 25 colores organizados -->
-                        <div class="color-option" style="background-color: #3498db;" data-color="#3498db" ></div>
-                        <div class="color-option" style="background-color: #e74c3c;" data-color="#e74c3c" ></div>
-                        <div class="color-option" style="background-color: #2ecc71;" data-color="#2ecc71" ></div>
-                        <div class="color-option" style="background-color: #f39c12;" data-color="#f39c12" ></div>
-                        <div class="color-option" style="background-color: #9b59b6;" data-color="#9b59b6" ></div>
-                        <div class="color-option" style="background-color: #1abc9c;" data-color="#1abc9c" ></div>
-                        <div class="color-option" style="background-color: #d35400;" data-color="#d35400" ></div>
-                        <div class="color-option" style="background-color: #34495e;" data-color="#34495e" ></div>
-                        <div class="color-option" style="background-color: #e67e22;" data-color="#e67e22" ></div>
-                        <div class="color-option" style="background-color: #27ae60;" data-color="#27ae60" ></div>
-                        <div class="color-option" style="background-color: #2980b9;" data-color="#2980b9" ></div>
-                        <div class="color-option" style="background-color: #8e44ad;" data-color="#8e44ad" ></div>
-                        <div class="color-option" style="background-color: #c0392b;" data-color="#c0392b" ></div>
-                        <div class="color-option" style="background-color: #16a085;" data-color="#16a085" ></div>
-                        <div class="color-option" style="background-color: #f1c40f;" data-color="#f1c40f" ></div>
-                        <div class="color-option" style="background-color: #7f8c8d;" data-color="#7f8c8d" ></div>
-                        <div class="color-option" style="background-color: #d35400;" data-color="#d35400" ></div>
-                        <div class="color-option" style="background-color: #2c3e50;" data-color="#2c3e50" ></div>
-                        <div class="color-option" style="background-color: #e84393;" data-color="#e84393" ></div>
-                        <div class="color-option" style="background-color: #6c5ce7;" data-color="#6c5ce7" ></div>
-                        <div class="color-option" style="background-color: #00b894;" data-color="#00b894" ></div>
-                        <div class="color-option" style="background-color: #e17055;" data-color="#e17055" ></div>
-                        <div class="color-option" style="background-color: #0984e3;" data-color="#0984e3" ></div>
-                        <div class="color-option" style="background-color: #fd79a8;" data-color="#fd79a8" ></div>
-                        <div class="color-option" style="background-color: #a29bfe;" data-color="#a29bfe" ></div>
-                    </div>
+                <div class="color-options" id="colorOptions">
+                    <!-- 25 colores organizados -->
+                    <div class="color-option" style="background-color: #3498db;" data-color="#3498db" ></div>
+                    <div class="color-option" style="background-color: #e74c3c;" data-color="#e74c3c" ></div>
+                    <div class="color-option" style="background-color: #2ecc71;" data-color="#2ecc71" ></div>
+                    <div class="color-option" style="background-color: #f39c12;" data-color="#f39c12" ></div>
+                    <div class="color-option" style="background-color: #9b59b6;" data-color="#9b59b6" ></div>
+                    <div class="color-option" style="background-color: #1abc9c;" data-color="#1abc9c" ></div>
+                    <div class="color-option" style="background-color: #d35400;" data-color="#d35400" ></div>
+                    <div class="color-option" style="background-color: #34495e;" data-color="#34495e" ></div>
+                    <div class="color-option" style="background-color: #e67e22;" data-color="#e67e22" ></div>
+                    <div class="color-option" style="background-color: #27ae60;" data-color="#27ae60" ></div>
+                    <div class="color-option" style="background-color: #2980b9;" data-color="#2980b9" ></div>
+                    <div class="color-option" style="background-color: #8e44ad;" data-color="#8e44ad" ></div>
+                    <div class="color-option" style="background-color: #c0392b;" data-color="#c0392b" ></div>
+                    <div class="color-option" style="background-color: #16a085;" data-color="#16a085" ></div>
+                    <div class="color-option" style="background-color: #f1c40f;" data-color="#f1c40f" ></div>
+                    <div class="color-option" style="background-color: #7f8c8d;" data-color="#7f8c8d" ></div>
+                    <div class="color-option" style="background-color: #d35400;" data-color="#d35400" ></div>
+                    <div class="color-option" style="background-color: #2c3e50;" data-color="#2c3e50" ></div>
+                    <div class="color-option" style="background-color: #e84393;" data-color="#e84393" ></div>
+                    <div class="color-option" style="background-color: #6c5ce7;" data-color="#6c5ce7" ></div>
+                    <div class="color-option" style="background-color: #00b894;" data-color="#00b894" ></div>
+                    <div class="color-option" style="background-color: #e17055;" data-color="#e17055" ></div>
+                    <div class="color-option" style="background-color: #0984e3;" data-color="#0984e3" ></div>
+                    <div class="color-option" style="background-color: #fd79a8;" data-color="#fd79a8" ></div>
+                    <div class="color-option" style="background-color: #a29bfe;" data-color="#a29bfe" ></div>
                 </div>
             </div>
             <div class="form-actions">
