@@ -4,27 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ranking de Pádel - Amigos</title>
-    <link rel="stylesheet" href="estilos.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h1>🏆 Ranking de Pádel - Amigos 🏆</h1>
     
-    <div class="stats-container">
-        <div class="stat-card">
-            <h3>Total de Jugadores</h3>
-            <p id="totalPlayers">0</p>
-        </div>
-        <div class="stat-card">
-            <h3>Total de Partidos</h3>
-            <p id="totalMatches">0</p>
-        </div>
-        <div class="stat-card">
-            <h3>Jugador con más puntos</h3>
-            <p id="topPlayer">-</p>
-        </div>
-    </div>
-    
+    <!-- Contenido principal (izquierda) -->
     <div class="main-content">
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Total de Jugadores</h3>
+                <p id="totalPlayers">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total de Partidos</h3>
+                <p id="totalMatches">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Jugador con mejor promedio</h3>
+                <p id="topPlayer">-</p>
+            </div>
+        </div>
+        
         <div class="container">
             <h2>🎾 Gestión de Jugadores</h2>
             <div class="player-management">
@@ -103,19 +104,18 @@
         </div>
     </div>
     
-    <div class="ranking-container">
+    <!-- Sidebar (derecha) -->
+    <div class="sidebar">
         <div class="container">
             <h2>🏅 Ranking Individual</h2>
             <table id="rankingTable">
                 <thead>
                     <tr>
-                        <th>Posición</th>
+                        <th>Pos</th>
                         <th>Jugador</th>
-                        <th>Puntuación</th>
+                        <th>Pts Tot</th>
+                        <th>Promedio</th>
                         <th>Partidos</th>
-                        <th>Victorias</th>
-                        <th>Derrotas</th>
-                        <th>% Victorias</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -199,3 +199,5 @@
     </div>
 
     <script src="script.js"></script>
+</body>
+</html>
