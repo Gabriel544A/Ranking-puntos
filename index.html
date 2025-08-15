@@ -13,12 +13,8 @@
     <div class="main-content">
         <div class="stats-container">
             <div class="stat-card">
-                <h3>Total de Jugadores</h3>
-                <p id="totalPlayers">0</p>
-            </div>
-            <div class="stat-card">
-                <h3>Total de Partidos</h3>
-                <p id="totalMatches">0</p>
+                <h3>Pareja con mejor promedio</h3>
+                <p id="topTeam">-</p>
             </div>
             <div class="stat-card">
                 <h3>Jugador con mejor promedio</h3>
@@ -78,6 +74,7 @@
                 <div class="form-group full-width">
                     <label for="date">Fecha del partido:</label>
                     <input type="date" id="date" required>
+                    <small>Se usará la fecha actual si no se selecciona otra</small>
                 </div>
                 <button type="submit" class="btn-primary full-width">
                     <span>✓</span> Registrar Partido
@@ -95,12 +92,29 @@
                         <th>Pareja B</th>
                         <th>Resultado</th>
                         <th>Ganadores</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <!-- Los partidos se cargarán aquí -->
                 </tbody>
             </table>
+        </div>
+        
+        <!-- Contenedor para botones de importación/exportación -->
+        <div class="data-management-container">
+            <div class="container">
+                <h2>💾 Gestión de Datos</h2>
+                <p>Importa o exporta tus datos para usarlos en diferentes dispositivos</p>
+                <div class="data-buttons">
+                    <button id="exportDataBtn" class="btn-primary">
+                        <span>📤</span> Exportar Datos (JSON)
+                    </button>
+                    <button id="importDataBtn" class="btn-warning">
+                        <span>📥</span> Importar Datos (JSON)
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -120,6 +134,24 @@
                 </thead>
                 <tbody>
                     <!-- Los datos del ranking se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="container">
+            <h2>👥 Ranking de Parejas</h2>
+            <table id="teamRankingTable">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Pareja</th>
+                        <th>Pts Tot</th>
+                        <th>Promedio</th>
+                        <th>Partidos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los datos del ranking de parejas se cargarán aquí -->
                 </tbody>
             </table>
         </div>
@@ -197,6 +229,11 @@
             </div>
         </div>
     </div>
+    
+
+
+    <!-- Input oculto para importar archivo -->
+    <input type="file" id="importFileInput" accept=".json" style="display: none;">
 
     <script src="script.js"></script>
 </body>
