@@ -38,6 +38,14 @@ document.addEventListener('DOMContentLoaded', function() {
         addNewPlayer();
     });
     
+    // Manejar Enter en el campo de nuevo jugador
+    document.getElementById('newPlayerName').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addNewPlayer();
+        }
+    });
+    
     // Configurar modal de edición
     const editModal = document.getElementById('editPlayerModal');
     const confirmDeleteModal = document.getElementById('confirmDeleteModal');
