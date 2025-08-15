@@ -6,12 +6,184 @@ let currentEditingPlayerId = null;
 let selectedColor = '#3498db';
 let playerToDelete = null;
 let lastSyncTimestamp = 0;
+let teamStats = {}; // Para almacenar estadísticas de parejas
 
 // Función para calcular promedio de puntos
 function calculateAveragePoints(player) {
     if (!player.pointsHistory || player.pointsHistory.length === 0) return 0;
     const sum = player.pointsHistory.reduce((total, points) => total + points, 0);
     return sum / player.pointsHistory.length;
+}
+
+// Renderizar el ranking de parejas
+function renderTeamRanking() {
+    const tableBody = document.querySelector('#teamRankingTable tbody');
+    tableBody.innerHTML = '';
+    
+    // Calcular estadísticas de parejas
+    const teams = calculateTeamStats();
+    
+    // Convertir el objeto de equipos a un array para ordenarlo
+    const teamsArray = Object.keys(teams).map(teamId => {
+        return {
+            id: teamId,
+            ...teams[teamId]
+        };
+    });
+    
+    // Filtrar equipos que tienen al menos un partido
+    const teamsWithMatches = teamsArray.filter(team => team.matches > 0);
+    
+    if (teamsWithMatches.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="5" style="text-align: center;">No hay parejas con partidos registrados</td>';
+        tableBody.appendChild(row);
+        return;
+    }
+    
+    // Ordenar equipos por puntos totales descendente
+    const sortedTeams = teamsWithMatches.sort((a, b) => b.points - a.points);
+    
+    sortedTeams.forEach((team, index) => {
+        // Obtener nombres de los jugadores
+        const player1 = players.find(p => p.id === team.players[0]);
+        const player2 = players.find(p => p.id === team.players[1]);
+        
+        // Si algún jugador no existe (fue eliminado), saltar este equipo
+        if (!player1 || !player2) return;
+        
+        const avgPoints = calculateTeamAveragePoints(team);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>
+                <span style="color: ${player1.color || '#000'}">${player1.name}</span> & 
+                <span style="color: ${player2.color || '#000'}">${player2.name}</span>
+            </td>
+            <td>${team.points.toFixed(1).replace('.', ',')}</td>
+            <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
+            <td>${team.matches}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// Función para exportar datos a un archivo JSON
+function exportData() {
+    try {
+        // Crear objeto con todos los datos
+        const exportData = {
+            players: players,
+            matches: matches,
+            lastExport: Date.now(),
+            version: '1.0'
+        };
+        
+        // Convertir a JSON
+        const jsonData = JSON.stringify(exportData, null, 2);
+        
+        // Crear blob y enlace de descarga
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        // Crear enlace temporal y hacer clic en él
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `padel_ranking_export_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpiar
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        return true;
+    } catch (error) {
+        console.error('Error al exportar datos:', error);
+        alert('Error al exportar datos. Por favor intenta de nuevo.');
+        return false;
+    }
+}
+
+// Función para importar datos desde un archivo JSON
+function importData(file) {
+    try {
+        // Verificar que es un archivo JSON
+        if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+            alert('Por favor selecciona un archivo JSON válido');
+            return false;
+        }
+        
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                // Parsear el contenido del archivo
+                const importedData = JSON.parse(e.target.result);
+                
+                // Validar que el archivo tiene la estructura correcta
+                if (!importedData.players || !importedData.matches || !Array.isArray(importedData.players) || !Array.isArray(importedData.matches)) {
+                    alert('El archivo no contiene datos válidos de ranking de pádel');
+                    return;
+                }
+                
+                // Confirmar la importación
+                if (confirm(`¿Estás seguro de que deseas importar estos datos? Se reemplazarán todos los datos actuales.\n\nJugadores: ${importedData.players.length}\nPartidos: ${importedData.matches.length}`)) {
+                    // Reemplazar datos actuales
+                    players = importedData.players;
+                    matches = importedData.matches;
+                    
+                    // Calcular el próximo ID disponible
+                    if (players.length > 0) {
+                        nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
+                    } else {
+                        nextPlayerId = 1;
+                    }
+                    
+                    // Asegurarse que todos los jugadores tengan pointsHistory
+                    players.forEach(player => {
+                        if (!player.pointsHistory) {
+                            player.pointsHistory = [];
+                        }
+                    });
+                    
+                    // Guardar datos importados
+                    savePlayers();
+                    saveMatches();
+                    syncData();
+                    
+                    // Actualizar la UI
+                    renderPlayersList();
+                    renderPlayersDropdown();
+                    renderRanking();
+                    renderTeamRanking();
+                    renderMatches();
+                    updateStats();
+                    
+                    alert('Datos importados correctamente');
+                }
+            } catch (parseError) {
+                console.error('Error al parsear el archivo JSON:', parseError);
+                alert('El archivo no contiene un formato JSON válido');
+            }
+        };
+        
+        reader.onerror = function() {
+            console.error('Error al leer el archivo');
+            alert('Error al leer el archivo. Por favor intenta de nuevo.');
+        };
+        
+        // Leer el archivo como texto
+        reader.readAsText(file);
+        
+        return true;
+    } catch (error) {
+        console.error('Error al importar datos:', error);
+        alert('Error al importar datos. Por favor intenta de nuevo.');
+        return false;
+    }
 }
 
 // Inicialización al cargar la página
@@ -21,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderPlayersList();
     renderPlayersDropdown();
     renderRanking();
+    renderTeamRanking();
     renderMatches();
     updateStats();
     
@@ -43,6 +216,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Enter') {
             e.preventDefault();
             addNewPlayer();
+        }
+    });
+    
+    // Configurar eventos para actualizar dropdowns cuando se selecciona un jugador
+    ['player1', 'player2', 'player3', 'player4'].forEach(dropdownId => {
+        document.getElementById(dropdownId).addEventListener('change', function() {
+            renderPlayersDropdown();
+        });
+    });
+    
+    // Manejar exportación de datos
+    document.getElementById('exportDataBtn').addEventListener('click', function() {
+        exportData();
+    });
+    
+    // Manejar importación de datos
+    document.getElementById('importDataBtn').addEventListener('click', function() {
+        document.getElementById('importFileInput').click();
+    });
+    
+    // Manejar selección de archivo para importar
+    document.getElementById('importFileInput').addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            importData(e.target.files[0]);
         }
     });
     
@@ -307,11 +504,8 @@ function recoverFromIndexedDB() {
 
 // Actualizar estadísticas generales
 function updateStats() {
-    document.getElementById('totalPlayers').textContent = players.length;
-    document.getElementById('totalMatches').textContent = matches.length;
-    
+    // Calcular jugador con mejor promedio (con al menos 1 partido)
     if (players.length > 0) {
-        // Calcular jugador con mejor promedio (con al menos 1 partido)
         const playersWithMatches = players.filter(p => p.matches > 0);
         
         if (playersWithMatches.length > 0) {
@@ -319,13 +513,50 @@ function updateStats() {
                 .sort((a, b) => calculateAveragePoints(b) - calculateAveragePoints(a))[0];
             
             const avg = calculateAveragePoints(playerWithBestAvg);
-            document.getElementById('topPlayer').textContent = 
-                `${playerWithBestAvg.name} (${avg.toFixed(1).replace('.', ',')} pts/partido)`;
+            document.getElementById('topPlayer').innerHTML = 
+                `<div>${playerWithBestAvg.name}</div>
+                <div class="stat-points">${avg.toFixed(1).replace('.', ',')} pts/partido</div>`;
         } else {
             document.getElementById('topPlayer').textContent = 'Ningún jugador con partidos';
         }
     } else {
         document.getElementById('topPlayer').textContent = '-';
+    }
+    
+    // Calcular pareja con mejor promedio
+    const teams = calculateTeamStats();
+    const teamsArray = Object.keys(teams).map(teamId => {
+        return {
+            id: teamId,
+            ...teams[teamId]
+        };
+    });
+    
+    // Filtrar equipos que tienen al menos un partido
+    const teamsWithMatches = teamsArray.filter(team => team.matches > 0);
+    
+    if (teamsWithMatches.length > 0) {
+        // Ordenar por promedio de puntos
+        const sortedTeams = teamsWithMatches.sort((a, b) => {
+            const avgA = calculateTeamAveragePoints(a);
+            const avgB = calculateTeamAveragePoints(b);
+            return avgB - avgA;
+        });
+        
+        const bestTeam = sortedTeams[0];
+        const player1 = players.find(p => p.id === bestTeam.players[0]);
+        const player2 = players.find(p => p.id === bestTeam.players[1]);
+        
+        if (player1 && player2) {
+            const avgPoints = calculateTeamAveragePoints(bestTeam);
+            document.getElementById('topTeam').innerHTML = 
+                `<div>${player1.name} & ${player2.name}</div>
+                <div class="stat-points">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</div>`;
+        } else {
+            document.getElementById('topTeam').textContent = 'Datos incompletos';
+        }
+    } else {
+        document.getElementById('topTeam').textContent = 'Ninguna pareja con partidos';
     }
 }
 
@@ -445,6 +676,7 @@ function savePlayerChanges() {
     renderPlayersList();
     renderPlayersDropdown();
     renderRanking();
+    renderTeamRanking(); // Actualizar ranking de parejas
     renderMatches();
     updateStats();
     
@@ -470,8 +702,66 @@ function deletePlayer(playerId) {
     renderPlayersList();
     renderPlayersDropdown();
     renderRanking();
+    renderTeamRanking(); // Actualizar ranking de parejas
     renderMatches();
     updateStats();
+}
+
+// Confirmar eliminación de partido
+function confirmDeleteMatch(matchId) {
+    if (confirm('¿Estás seguro de que deseas eliminar este partido? Esta acción no se puede deshacer.')) {
+        deleteMatch(matchId);
+    }
+}
+
+// Eliminar partido
+function deleteMatch(matchId) {
+    // Encontrar el partido por ID
+    const matchIndex = matches.findIndex(m => m.id === matchId);
+    if (matchIndex === -1) return;
+    
+    // Eliminar partido
+    matches.splice(matchIndex, 1);
+    
+    // Guardar cambios
+    saveMatches();
+    syncData();
+    
+    // Recalcular puntuaciones de todos los jugadores
+    recalculateAllRatings();
+    
+    // Actualizar la UI
+    renderRanking();
+    renderTeamRanking();
+    renderMatches();
+    updateStats();
+}
+
+// Recalcular todas las puntuaciones desde cero
+function recalculateAllRatings() {
+    // Reiniciar puntuaciones de todos los jugadores
+    players.forEach(player => {
+        player.rating = 0;
+        player.matches = 0;
+        player.wins = 0;
+        player.losses = 0;
+        player.pointsHistory = [];
+    });
+    
+    // Recalcular basado en los partidos existentes
+    matches.forEach(match => {
+        // Verificar que todos los jugadores existan antes de actualizar puntuaciones
+        const player1 = players.find(p => p.id === match.teamA[0]);
+        const player2 = players.find(p => p.id === match.teamA[1]);
+        const player3 = players.find(p => p.id === match.teamB[0]);
+        const player4 = players.find(p => p.id === match.teamB[1]);
+        
+        if (player1 && player2 && player3 && player4) {
+            updateRatings(match);
+        }
+    });
+    
+    savePlayers();
 }
 
 // Renderizar lista de jugadores
@@ -513,20 +803,45 @@ function renderPlayersList() {
 function renderPlayersDropdown() {
     const dropdowns = ['player1', 'player2', 'player3', 'player4'];
     
+    // Obtener los valores seleccionados actualmente
+    const selectedValues = {};
+    dropdowns.forEach(id => {
+        const dropdown = document.getElementById(id);
+        if (dropdown.value) {
+            selectedValues[id] = dropdown.value;
+        }
+    });
+    
+    // Actualizar cada dropdown
     dropdowns.forEach(dropdownId => {
         const dropdown = document.getElementById(dropdownId);
+        const currentValue = dropdown.value;
+        
         dropdown.innerHTML = '<option value="">Seleccionar jugador</option>';
         
         // Ordenar jugadores por nombre
         const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
         
         sortedPlayers.forEach(player => {
-            const option = document.createElement('option');
-            option.value = player.id;
-            option.textContent = player.name;
-            option.style.color = player.color || '#000';
-            dropdown.appendChild(option);
+            // Verificar si este jugador ya está seleccionado en otro dropdown
+            const isSelectedElsewhere = Object.entries(selectedValues).some(([id, value]) => 
+                id !== dropdownId && value === player.id.toString()
+            );
+            
+            // Solo añadir el jugador si no está seleccionado en otro dropdown o si es el valor actual de este dropdown
+            if (!isSelectedElsewhere || player.id.toString() === currentValue) {
+                const option = document.createElement('option');
+                option.value = player.id;
+                option.textContent = player.name;
+                option.style.color = player.color || '#000';
+                dropdown.appendChild(option);
+            }
         });
+        
+        // Restaurar el valor seleccionado si existía
+        if (currentValue) {
+            dropdown.value = currentValue;
+        }
     });
 }
 
@@ -545,7 +860,14 @@ function registerMatch() {
     const player4Id = parseInt(document.getElementById('player4').value);
     const scoreA = parseInt(document.getElementById('scoreA').value);
     const scoreB = parseInt(document.getElementById('scoreB').value);
-    const date = document.getElementById('date').value;
+    
+    // Obtener fecha del partido (usar fecha actual si no se seleccionó otra)
+    let date = document.getElementById('date').value;
+    if (!date) {
+        const today = new Date();
+        date = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        document.getElementById('date').value = date;
+    }
     
     // Validar que no hay jugadores repetidos
     const uniquePlayers = new Set([player1Id, player2Id, player3Id, player4Id]);
@@ -584,6 +906,7 @@ function registerMatch() {
     
     // Actualizar la UI
     renderRanking();
+    renderTeamRanking(); // Actualizar ranking de parejas
     renderMatches();
     renderPlayersList();
     updateStats();
@@ -697,6 +1020,84 @@ function renderRanking() {
     });
 }
 
+// Calcular estadísticas de parejas
+function calculateTeamStats() {
+    teamStats = {}; // Reiniciar estadísticas
+    
+    matches.forEach(match => {
+        // Crear identificadores únicos para cada pareja
+        const teamAId = match.teamA.sort().join('-');
+        const teamBId = match.teamB.sort().join('-');
+        
+        // Inicializar estadísticas si no existen
+        if (!teamStats[teamAId]) {
+            teamStats[teamAId] = {
+                players: match.teamA,
+                matches: 0,
+                wins: 0,
+                losses: 0,
+                points: 0,
+                pointsHistory: []
+            };
+        }
+        
+        if (!teamStats[teamBId]) {
+            teamStats[teamBId] = {
+                players: match.teamB,
+                matches: 0,
+                wins: 0,
+                losses: 0,
+                points: 0,
+                pointsHistory: []
+            };
+        }
+        
+        // Actualizar estadísticas basadas en el resultado del partido
+        teamStats[teamAId].matches++;
+        teamStats[teamBId].matches++;
+        
+        // Calcular puntos ganados en este partido
+        const scoreDiff = Math.abs(match.scoreA - match.scoreB);
+        const winnerBasePoints = 3;
+        const loserBasePoints = 1;
+        const diffMultiplier = 0.5;
+        const extraPoints = scoreDiff * diffMultiplier;
+        
+        if (match.scoreA > match.scoreB) {
+            // Equipo A ganó
+            teamStats[teamAId].wins++;
+            teamStats[teamBId].losses++;
+            
+            const totalPointsWinner = winnerBasePoints + extraPoints;
+            teamStats[teamAId].points += totalPointsWinner;
+            teamStats[teamAId].pointsHistory.push(totalPointsWinner);
+            
+            teamStats[teamBId].points += loserBasePoints;
+            teamStats[teamBId].pointsHistory.push(loserBasePoints);
+        } else {
+            // Equipo B ganó
+            teamStats[teamBId].wins++;
+            teamStats[teamAId].losses++;
+            
+            const totalPointsWinner = winnerBasePoints + extraPoints;
+            teamStats[teamBId].points += totalPointsWinner;
+            teamStats[teamBId].pointsHistory.push(totalPointsWinner);
+            
+            teamStats[teamAId].points += loserBasePoints;
+            teamStats[teamAId].pointsHistory.push(loserBasePoints);
+        }
+    });
+    
+    return teamStats;
+}
+
+// Calcular promedio de puntos para una pareja
+function calculateTeamAveragePoints(team) {
+    if (!team.pointsHistory || team.pointsHistory.length === 0) return 0;
+    const sum = team.pointsHistory.reduce((total, points) => total + points, 0);
+    return sum / team.pointsHistory.length;
+}
+
 // Renderizar historial de partidos
 function renderMatches() {
     const tableBody = document.querySelector('#matchesTable tbody');
@@ -704,7 +1105,7 @@ function renderMatches() {
     
     if (matches.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="5" style="text-align: center;">No hay partidos registrados</td>';
+        row.innerHTML = '<td colspan="6" style="text-align: center;">No hay partidos registrados</td>';
         tableBody.appendChild(row);
         return;
     }
@@ -744,7 +1145,20 @@ function renderMatches() {
             </td>
             <td>${result}</td>
             <td>${winners}</td>
+            <td>
+                <button class="btn-danger btn-small delete-match-btn" data-match-id="${match.id}">
+                    <span>🗑️</span>
+                </button>
+            </td>
         `;
         tableBody.appendChild(row);
+    });
+    
+    // Agregar event listeners a los botones de borrar
+    document.querySelectorAll('.delete-match-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const matchId = parseInt(this.getAttribute('data-match-id'));
+            confirmDeleteMatch(matchId);
+        });
     });
 }
