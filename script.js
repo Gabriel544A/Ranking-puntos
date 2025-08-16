@@ -941,7 +941,7 @@ function renderPlayersList() {
                 <span class="player-rating">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</span>
             </div>
             <div class="action-buttons">
-                <button class="btn-warning" onclick="editPlayer(${player.id})" style="display: none;">
+                <button class="btn-warning" onclick="editPlayer(${player.id})" style="${editModeEnabled ? 'display: flex;' : 'display: none;'}">
                     <span>✏️</span> Editar
                 </button>
             </div>
@@ -1300,7 +1300,7 @@ function renderMatches() {
             <td>${result}</td>
             <td>${winners}</td>
             <td>
-                <button class="btn-danger btn-small delete-match-btn" data-match-id="${match.id}" style="display: none;">
+                <button class="btn-danger btn-small delete-match-btn" data-match-id="${match.id}" style="${editModeEnabled ? 'display: flex;' : 'display: none;'}">
                     <span>🗑️</span>
                 </button>
             </td>
