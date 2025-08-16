@@ -1,3 +1,31 @@
+// Colores predefinidos con nombres descriptivos
+const predefinedColors = [
+    { hex: '#3498db', name: 'Azul' },
+    { hex: '#e74c3c', name: 'Rojo' },
+    { hex: '#2ecc71', name: 'Verde' },
+    { hex: '#f39c12', name: 'Naranja' },
+    { hex: '#9b59b6', name: 'Púrpura' },
+    { hex: '#1abc9c', name: 'Turquesa' },
+    { hex: '#d35400', name: 'Naranja oscuro' },
+    { hex: '#34495e', name: 'Azul marino' },
+    { hex: '#e67e22', name: 'Naranja claro' },
+    { hex: '#27ae60', name: 'Verde oscuro' },
+    { hex: '#2980b9', name: 'Azul oscuro' },
+    { hex: '#8e44ad', name: 'Violeta' },
+    { hex: '#c0392b', name: 'Rojo oscuro' },
+    { hex: '#16a085', name: 'Verde azulado' },
+    { hex: '#f1c40f', name: 'Amarillo' },
+    { hex: '#7f8c8d', name: 'Gris' },
+    { hex: '#2c3e50', name: 'Azul noche' },
+    { hex: '#e84393', name: 'Rosa' },
+    { hex: '#6c5ce7', name: 'Índigo' },
+    { hex: '#00b894', name: 'Menta' },
+    { hex: '#e17055', name: 'Coral' },
+    { hex: '#0984e3', name: 'Azul brillante' },
+    { hex: '#fd79a8', name: 'Rosa claro' },
+    { hex: '#a29bfe', name: 'Lavanda' }
+];
+
 // Datos iniciales
 let players = [];
 let matches = [];
@@ -295,6 +323,39 @@ function importData(file) {
     }
 }
 
+// Función para generar los selectores de color dinámicamente
+function generateColorOptions() {
+    const colorOptionsContainer = document.getElementById('colorOptions');
+    if (!colorOptionsContainer) return;
+    
+    // Limpiar contenedor
+    colorOptionsContainer.innerHTML = '';
+    
+    // Generar opciones de color
+    predefinedColors.forEach((color, index) => {
+        const colorOption = document.createElement('div');
+        colorOption.className = 'color-option';
+        colorOption.style.backgroundColor = color.hex;
+        colorOption.setAttribute('data-color', color.hex);
+        // Eliminamos el atributo title para que no se muestre el nombre
+        // colorOption.setAttribute('title', color.name);
+        colorOption.setAttribute('aria-label', color.name); // Mantenemos aria-label para accesibilidad
+        colorOption.setAttribute('tabindex', '0');
+        colorOption.setAttribute('role', 'radio');
+        colorOption.setAttribute('aria-checked', 'false');
+        
+        // Añadir eventos para accesibilidad con teclado
+        colorOption.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.click();
+            }
+        });
+        
+        colorOptionsContainer.appendChild(colorOption);
+    });
+}
+
 // Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     loadPlayers();
@@ -305,6 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderTeamRanking();
     renderMatches();
     updateStats();
+    generateColorOptions();
     
     // Configurar sincronización periódica
     setInterval(syncData, 30000); // Sincronizar cada 30 segundos
@@ -388,8 +450,10 @@ document.addEventListener('DOMContentLoaded', function() {
         option.addEventListener('click', function() {
             document.querySelectorAll('.color-option').forEach(opt => {
                 opt.classList.remove('selected');
+                opt.setAttribute('aria-checked', 'false');
             });
             this.classList.add('selected');
+            this.setAttribute('aria-checked', 'true');
             selectedColor = this.getAttribute('data-color');
         });
     });

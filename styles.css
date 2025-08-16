@@ -324,6 +324,7 @@ button:hover {
     box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 
+/* 
 .color-option::after {
     content: attr(title);
     position: absolute;
@@ -343,6 +344,7 @@ button:hover {
 .color-option:hover::after {
     opacity: 1;
 }
+*/
 
 .form-actions {
     display: flex;
@@ -2086,4 +2088,5 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
   --danger: #e74c3c;
   --danger-700: #c0392b;
   --info: #9b59b6;
-  --info-700: #8e
+  --info-700: #8e44ad;
+}
