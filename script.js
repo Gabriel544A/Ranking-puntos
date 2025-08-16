@@ -832,19 +832,15 @@ function addNewPlayer() {
         return;
     }
     
-    // Verificar si el jugador ya existe (búsqueda insensible a mayúsculas/minúsculas)
+    // Verificar si el jugador ya existe
     const existingPlayerIndex = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
     
     if (existingPlayerIndex >= 0) {
-        // Si el jugador existe, mostrar confirmación para actualizar
         if (confirm(`El jugador "${name}" ya existe. ¿Deseas actualizar sus datos?`)) {
-            // Mantener datos históricos y solo actualizar el nombre si hay cambios de capitalización
             if (players[existingPlayerIndex].name !== name) {
                 players[existingPlayerIndex].name = name;
                 savePlayers();
                 syncData();
-                
-                // Actualizar la UI
                 renderPlayersList();
                 renderPlayersDropdown();
                 renderRanking();
@@ -856,7 +852,26 @@ function addNewPlayer() {
         return;
     }
     
-    // Crear nuevo jugador con pointsHistory
+    // Función para obtener un color único
+    const getUniqueColor = () => {
+        // Obtener colores usados por jugadores activos
+        const usedColors = players.map(p => p.color);
+        
+        // Filtrar colores disponibles (no usados)
+        const availableColors = predefinedColors
+            .filter(color => !usedColors.includes(color.hex))
+            .map(color => color.hex);
+        
+        // Si hay colores disponibles, seleccionar uno aleatorio
+        if (availableColors.length > 0) {
+            return availableColors[Math.floor(Math.random() * availableColors.length)];
+        }
+        
+        // Si no hay colores disponibles, seleccionar uno aleatorio de toda la paleta
+        return predefinedColors[Math.floor(Math.random() * predefinedColors.length)].hex;
+    };
+    
+    // Crear nuevo jugador con color único
     const newPlayer = {
         id: nextPlayerId++,
         name: name,
@@ -865,14 +880,14 @@ function addNewPlayer() {
         wins: 0,
         losses: 0,
         pointsHistory: [],
-        color: selectedColor || '#3498db',
+        color: getUniqueColor(), // Asignar color único
         createdAt: Date.now(),
         updatedAt: Date.now()
     };
     
     players.push(newPlayer);
     savePlayers();
-    syncData(); // Sincronizar después de agregar un jugador
+    syncData();
     
     // Actualizar la UI
     renderPlayersList();
@@ -883,6 +898,7 @@ function addNewPlayer() {
     // Limpiar campo de entrada
     nameInput.value = '';
 }
+
 
 // Abrir modal para editar jugador
 function editPlayer(playerId) {
