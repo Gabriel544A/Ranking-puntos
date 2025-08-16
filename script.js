@@ -9,7 +9,7 @@ const predefinedColors = [
     { hex: '#d35400', name: 'Naranja oscuro' },
     { hex: '#34495e', name: 'Azul marino' },
     { hex: '#e67e22', name: 'Naranja claro' },
-    { hex: '#27ae60', name: 'Verde oscuro' },
+    { hex: '#E4F250', name: 'Amarillo brillante' },
     { hex: '#2980b9', name: 'Azul oscuro' },
     { hex: '#8e44ad', name: 'Violeta' },
     { hex: '#c0392b', name: 'Rojo oscuro' },
@@ -23,8 +23,64 @@ const predefinedColors = [
     { hex: '#e17055', name: 'Coral' },
     { hex: '#0984e3', name: 'Azul brillante' },
     { hex: '#fd79a8', name: 'Rosa claro' },
-    { hex: '#a29bfe', name: 'Lavanda' }
+    { hex: '#a29bfe', name: 'Lavanda' },
+    { hex: '#08EF01', name: 'Verde brillante' },
 ];
+
+function hexToRgb(hex) {
+    const h = hex.replace('#', '');
+    const bigint = parseInt(h, 16);
+    return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+    };
+}
+
+function rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const d = max - min;
+    let h = 0;
+    if (d !== 0) {
+        switch (max) {
+            case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
+            case g: h = ((b - r) / d + 2); break;
+            case b: h = ((r - g) / d + 4); break;
+        }
+        h /= 6;
+    }
+    const s = max === 0 ? 0 : d / max;
+    const v = max;
+    return [h * 360, s, v]; // h en [0..360), s y v en [0..1]
+}
+
+function hexToHsv(hex) {
+    const { r, g, b } = hexToRgb(hex);
+    return rgbToHsv(r, g, b);
+}
+
+// Ordena por: colores (saturación >= 0.15) primero ordenados por Hue asc, luego Saturación desc, luego Valor desc.
+// Neutros (saturación < 0.15) al final ordenados por Valor desc.
+function sortPaletteByHSV(colors) {
+    return [...colors].sort((a, b) => {
+        const [ha, sa, va] = hexToHsv(a.hex);
+        const [hb, sb, vb] = hexToHsv(b.hex);
+
+        const aNeutral = sa < 0.15 ? 1 : 0;
+        const bNeutral = sb < 0.15 ? 1 : 0;
+        if (aNeutral !== bNeutral) return aNeutral - bNeutral; // colores antes que neutros
+
+        if (aNeutral === 0) {
+            if (ha !== hb) return ha - hb;         // Hue ascendente
+            if (sa !== sb) return sb - sa;         // Saturación descendente
+            return vb - va;                        // Valor descendente
+        } else {
+            return vb - va;                        // Neutros por brillo
+        }
+    });
+}
+
 
 // Datos iniciales
 let players = [];
@@ -387,8 +443,9 @@ function generateColorOptions() {
     // Limpiar contenedor
     colorOptionsContainer.innerHTML = '';
     
-    // Generar opciones de color
-    predefinedColors.forEach((color, index) => {
+    // Generar opciones de color en orden lógico (HSV)
+    const sorted = sortPaletteByHSV(predefinedColors);
+    sorted.forEach((color) => {
         const colorOption = document.createElement('div');
         colorOption.className = 'color-option';
         colorOption.style.backgroundColor = color.hex;
