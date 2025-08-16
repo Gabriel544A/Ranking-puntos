@@ -133,16 +133,16 @@ function getTopPlayers() {
 function applyPlayerRankStyle(playerName, playerId) {
     const topPlayers = getTopPlayers();
     const playerIndex = topPlayers.findIndex(p => p.id === playerId);
-    
+
     if (playerIndex === 0) {
-        return `<span class="rank-1 global-top-player">🥇 ${playerName}</span>`;
+        return `<span class="player-name rank-1 global-top-player">🥇 ${playerName}</span>`;
     } else if (playerIndex === 1) {
-        return `<span class="rank-2 global-top-player">🥈 ${playerName}</span>`;
+        return `<span class="player-name rank-2 global-top-player">🥈 ${playerName}</span>`;
     } else if (playerIndex === 2) {
-        return `<span class="rank-3 global-top-player">🥉 ${playerName}</span>`;
+        return `<span class="player-name rank-3 global-top-player">🥉 ${playerName}</span>`;
     }
-    
-    return playerName;
+
+    return `<span class="player-name">${playerName}</span>`;
 }
 
 // Inyectar estilos para efecto de brillo intermitente de top players (una sola vez)
