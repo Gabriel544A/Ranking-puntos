@@ -124,6 +124,62 @@ function calculateAveragePoints(player) {
     return sum / player.pointsHistory.length;
 }
 
+// Obtener los top 3 jugadores globalmente
+function getTopPlayers() {
+    return [...players].sort((a, b) => b.rating - a.rating).slice(0, 3);
+}
+
+// Aplicar estilos especiales a nombres de jugadores según su posición en el ranking global
+function applyPlayerRankStyle(playerName, playerId) {
+    const topPlayers = getTopPlayers();
+    const playerIndex = topPlayers.findIndex(p => p.id === playerId);
+    
+    if (playerIndex === 0) {
+        return `<span class="rank-1 global-top-player">🥇 ${playerName}</span>`;
+    } else if (playerIndex === 1) {
+        return `<span class="rank-2 global-top-player">🥈 ${playerName}</span>`;
+    } else if (playerIndex === 2) {
+        return `<span class="rank-3 global-top-player">🥉 ${playerName}</span>`;
+    }
+    
+    return playerName;
+}
+
+// Inyectar estilos para efecto de brillo intermitente de top players (una sola vez)
+(function injectTopPlayerStyles(){
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('top-player-glow-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'top-player-glow-styles';
+    style.textContent = `
+        .global-top-player {
+            position: relative;
+            overflow: hidden;
+        }
+        .global-top-player::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -120%;
+            width: 120%;
+            height: 100%;
+            background: linear-gradient(110deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.55) 48%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.55) 52%, rgba(255,255,255,0) 70%);
+            transform: skewX(-20deg);
+            pointer-events: none;
+            animation: shimmerSweep 5s ease-in-out infinite;
+        }
+        @keyframes shimmerSweep {
+            0% { left: -120%; }
+            30% { left: 120%; }
+            100% { left: 120%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .global-top-player::after { animation: none; }
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
 // Renderizar el ranking de parejas
 function renderTeamRanking() {
     const tableBody = document.querySelector('#teamRankingTable tbody');
@@ -166,8 +222,8 @@ function renderTeamRanking() {
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>
-                <span style="color: ${player1.color || '#000'}">${player1.name}</span> & 
-                <span style="color: ${player2.color || '#000'}">${player2.name}</span>
+                ${applyPlayerRankStyle(player1.name, player1.id)} & 
+                ${applyPlayerRankStyle(player2.name, player2.id)}
             </td>
             <td>${team.points.toFixed(1).replace('.', ',')}</td>
             <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
@@ -654,7 +710,7 @@ function updateStats() {
             
             const avg = calculateAveragePoints(playerWithBestAvg);
             document.getElementById('topPlayer').innerHTML = 
-                `<div>${playerWithBestAvg.name}</div>
+                `<div>${applyPlayerRankStyle(playerWithBestAvg.name, playerWithBestAvg.id)}</div>
                 <div class="stat-points">${avg.toFixed(1).replace('.', ',')} pts/partido</div>`;
         } else {
             document.getElementById('topPlayer').textContent = 'Ningún jugador con partidos';
@@ -690,7 +746,7 @@ function updateStats() {
         if (player1 && player2) {
             const avgPoints = calculateTeamAveragePoints(bestTeam);
             document.getElementById('topTeam').innerHTML = 
-                `<div>${player1.name} & ${player2.name}</div>
+                `<div>${applyPlayerRankStyle(player1.name, player1.id)} & ${applyPlayerRankStyle(player2.name, player2.id)}</div>
                 <div class="stat-points">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</div>`;
         } else {
             document.getElementById('topTeam').textContent = 'Datos incompletos';
@@ -937,7 +993,7 @@ function renderPlayersList() {
         
         playerItem.innerHTML = `
             <div class="player-info">
-                <span style="color: ${player.color || '#000'}">${player.name}</span>
+                ${applyPlayerRankStyle(player.name, player.id)}
                 <span class="player-rating">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</span>
             </div>
             <div class="action-buttons">
@@ -984,7 +1040,10 @@ function renderPlayersDropdown() {
             if (!isSelectedElsewhere || player.id.toString() === currentValue) {
                 const option = document.createElement('option');
                 option.value = player.id;
-                option.textContent = player.name;
+                const topPlayers = getTopPlayers();
+                const idx = topPlayers.findIndex(p => p.id === player.id);
+                const emoji = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : '';
+                option.textContent = emoji + player.name;
                 option.style.color = player.color || '#000';
                 dropdown.appendChild(option);
             }
@@ -1156,20 +1215,39 @@ function updateRatings(match) {
 function renderRanking() {
     const tableBody = document.querySelector('#rankingTable tbody');
     tableBody.innerHTML = '';
-    
+
     // Ordenar jugadores por PUNTOS TOTALES descendente
     const sortedPlayers = [...players].sort((a, b) => b.rating - a.rating);
-    
+
     sortedPlayers.forEach((player, index) => {
         const avgPoints = calculateAveragePoints(player);
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${index + 1}</td>
-            <td style="color: ${player.color || '#000'}">${player.name}</td>
-            <td>${player.rating.toFixed(1).replace('.', ',')}</td>
-            <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
-            <td>${player.matches}</td>
-        `;
+
+        const tdPos = document.createElement('td');
+        tdPos.textContent = String(index + 1);
+
+        const tdName = document.createElement('td');
+        tdName.innerHTML = applyPlayerRankStyle(player.name, player.id);
+        // Para el resto, se respeta el color elegido por el jugador (applyPlayerRankStyle ya se encarga de top3)
+        if (![0,1,2].includes(index)) {
+            tdName.style.color = player.color || '#000';
+        }
+
+        const tdRating = document.createElement('td');
+        tdRating.textContent = player.rating.toFixed(1).replace('.', ',');
+
+        const tdAvg = document.createElement('td');
+        tdAvg.textContent = avgPoints.toFixed(1).replace('.', ',');
+
+        const tdMatches = document.createElement('td');
+        tdMatches.textContent = String(player.matches);
+
+        row.appendChild(tdPos);
+        row.appendChild(tdName);
+        row.appendChild(tdRating);
+        row.appendChild(tdAvg);
+        row.appendChild(tdMatches);
+
         tableBody.appendChild(row);
     });
 }
@@ -1290,15 +1368,15 @@ function renderMatches() {
         row.innerHTML = `
             <td>${formattedDate}</td>
             <td>
-                <span style="color: ${player1.color || '#000'}">${player1.name}</span> & 
-                <span style="color: ${player2.color || '#000'}">${player2.name}</span>
+                ${applyPlayerRankStyle(player1.name, player1.id)} & 
+                ${applyPlayerRankStyle(player2.name, player2.id)}
             </td>
             <td>
-                <span style="color: ${player3.color || '#000'}">${player3.name}</span> & 
-                <span style="color: ${player4.color || '#000'}">${player4.name}</span>
+                ${applyPlayerRankStyle(player3.name, player3.id)} & 
+                ${applyPlayerRankStyle(player4.name, player4.id)}
             </td>
             <td>${result}</td>
-            <td>${winners}</td>
+            <td>${match.scoreA > match.scoreB ? `${applyPlayerRankStyle(player1.name, player1.id)} & ${applyPlayerRankStyle(player2.name, player2.id)}` : `${applyPlayerRankStyle(player3.name, player3.id)} & ${applyPlayerRankStyle(player4.name, player4.id)}`}</td>
             <td>
                 <button class="btn-danger btn-small delete-match-btn" data-match-id="${match.id}" style="${editModeEnabled ? 'display: flex;' : 'display: none;'}">
                     <span>🗑️</span>
