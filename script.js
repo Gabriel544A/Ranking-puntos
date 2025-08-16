@@ -42,14 +42,79 @@ function toggleEditMode(enabled) {
 
 // Función para solicitar contraseña
 function requestPassword() {
-    const password = prompt('Ingrese la contraseña para habilitar el modo de edición:');
-    if (password === '544') {
-        toggleEditMode(true);
-        return true;
-    } else if (password !== null) {
-        alert('Contraseña incorrecta');
-    }
-    return false;
+    const passwordModal = document.getElementById('passwordModal');
+    const passwordInput = document.getElementById('passwordInput');
+    
+    // Mostrar el modal
+    passwordModal.style.display = 'block';
+    
+    // Enfocar el input
+    setTimeout(() => {
+        passwordInput.focus();
+    }, 100);
+    
+    // Limpiar el input
+    passwordInput.value = '';
+    
+    return new Promise((resolve) => {
+        // Función para manejar la validación de contraseña
+        function validatePassword() {
+            const password = passwordInput.value;
+            if (password === '544') {
+                passwordModal.style.display = 'none';
+                toggleEditMode(true);
+                resolve(true);
+            } else if (password !== '') {
+                alert('Contraseña incorrecta');
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+        
+        // Botón de confirmación
+        const confirmBtn = document.getElementById('confirmPasswordBtn');
+        const cancelBtn = document.getElementById('cancelPasswordBtn');
+        const closeBtn = passwordModal.querySelector('.close');
+        
+        // Limpiar eventos previos
+        confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        closeBtn.replaceWith(closeBtn.cloneNode(true));
+        
+        // Obtener las nuevas referencias
+        const newConfirmBtn = document.getElementById('confirmPasswordBtn');
+        const newCancelBtn = document.getElementById('cancelPasswordBtn');
+        const newCloseBtn = passwordModal.querySelector('.close');
+        
+        // Configurar eventos
+        newConfirmBtn.addEventListener('click', validatePassword);
+        
+        newCancelBtn.addEventListener('click', () => {
+            passwordModal.style.display = 'none';
+            resolve(false);
+        });
+        
+        newCloseBtn.addEventListener('click', () => {
+            passwordModal.style.display = 'none';
+            resolve(false);
+        });
+        
+        // Enter en el input
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                validatePassword();
+            }
+        });
+        
+        // Escape para cerrar
+        document.addEventListener('keydown', function escapeHandler(e) {
+            if (e.key === 'Escape') {
+                passwordModal.style.display = 'none';
+                document.removeEventListener('keydown', escapeHandler);
+                resolve(false);
+            }
+        });
+    });
 }
 
 // Función para calcular promedio de puntos
@@ -294,6 +359,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar modal de edición
     const editModal = document.getElementById('editPlayerModal');
     const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+    const passwordModal = document.getElementById('passwordModal');
     const span = document.getElementsByClassName('close')[0];
     const cancelBtn = document.getElementById('cancelEditBtn');
     
@@ -306,9 +372,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     window.onclick = function(event) {
-        if (event.target == editModal || event.target == confirmDeleteModal) {
+        if (event.target == editModal) {
             editModal.style.display = 'none';
+        }
+        if (event.target == confirmDeleteModal) {
             confirmDeleteModal.style.display = 'none';
+        }
+        if (event.target == passwordModal) {
+            passwordModal.style.display = 'none';
         }
     }
     
@@ -362,11 +433,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Manejar botón de habilitar edición
-    document.getElementById('enableEditBtn').addEventListener('click', function() {
+    document.getElementById('enableEditBtn').addEventListener('click', async function() {
         if (editModeEnabled) {
             toggleEditMode(false);
         } else {
-            requestPassword();
+            await requestPassword();
         }
     });
     

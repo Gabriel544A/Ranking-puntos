@@ -232,6 +232,26 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para contraseña de edición -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content confirmation-modal">
+            <span class="close">&times;</span>
+            <h2>🔐 Habilitar Edición</h2>
+            <p>Ingresa la contraseña para habilitar el modo de edición:</p>
+            <div class="form-group">
+                <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="off">
+            </div>
+            <div class="confirmation-buttons">
+                <button id="confirmPasswordBtn" class="btn-success">
+                    <span>🔓</span> Habilitar
+                </button>
+                <button id="cancelPasswordBtn" class="btn-danger">
+                    <span>✖</span> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Input oculto para importar archivo -->
     <input type="file" id="importFileInput" accept=".json" style="display: none;">
