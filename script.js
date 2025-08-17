@@ -1134,9 +1134,9 @@ function renderPlayersList() {
                 <span class="player-rating">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</span>
             </div>
             <div class="action-buttons">
-                <button class="btn-warning" onclick="editPlayer(${player.id})" style="${editModeEnabled ? 'display: flex;' : 'display: none;'}">
-                    <span>✏️</span> Editar
-                </button>
+                    <button class="edit-player-btn" onclick="editPlayer(${player.id})" title="Editar jugador" style="${editModeEnabled ? 'display: inline-flex;' : 'display: none;'}">
+                        <span style="font-size:1.2em;">✏️</span>
+                    </button>
             </div>
         `;
         

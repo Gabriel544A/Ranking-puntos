@@ -174,11 +174,31 @@ button:hover {
 }
 
 .btn-success {
-    background-color: var(--success);
+  background: #fff;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.08rem;
+  border: 2px solid #16a085;
+  box-shadow: 0 2px 8px rgba(22,160,133,0.08);
+  letter-spacing: 0.01em;
+  padding: 10px 28px;
+  border-radius: 8px;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .btn-success:hover {
-    background-color: var(--success-600);
+  background: #f8fffa;
+  color: #0b3d2e;
+  border-color: #138d75;
+  box-shadow: 0 4px 16px rgba(22,160,133,0.15);
+  transform: translateY(-2px) scale(1.03);
+}
+.btn-success:active {
+  background: #e6fff3;
+  color: #0b3d2e;
+  border-color: #117a65;
+  box-shadow: 0 2px 8px rgba(22,160,133,0.10);
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-warning {
@@ -236,15 +256,20 @@ button:hover {
 }
 
 .player-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  width: 100%;
 }
 
 .player-rating {
-    font-weight: bold;
-    color: #2c3e50;
-    font-size: 1.1rem;
+  font-weight: bold;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  justify-self: center;
+  text-align: center;
+  min-width: 110px;
+  letter-spacing: 0.02em;
 }
 
 .no-players {
@@ -697,15 +722,6 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
 /* Player list improvements */
 .player-item { border-bottom: 1px dashed var(--border); border-radius: 10px; }
 .player-item:hover { background: #f9fbff; }
-.player-info span:first-child::before {
-  content: '';
-  display: inline-block;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background-color: currentColor;
-  margin-right: 8px;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.05);
-}
 
 /* Modal polish */
 .modal-content {
@@ -939,6 +955,30 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
 #enableEditBtn:hover {
     filter: brightness(1.05);
     transform: translateY(-1px);
+}
+
+/* Botón de editar jugador minimalista y moderno */
+.edit-player-btn {
+  background: none;
+  border: none;
+  color: #3498db;
+  font-size: 1.5rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.edit-player-btn:hover {
+  background: #eaf6fb;
+  color: #217dbb;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.08);
+}
+.edit-player-btn:active {
+  background: #d4ecfa;
+  color: #145a8a;
 }
 
 
