@@ -1,3 +1,74 @@
+/* Botón de registrar partido deshabilitado */
+#matchForm button[disabled], .btn-primary:disabled {
+  background: #d7e2e7 !important;
+  color: #a0a8ad !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  opacity: 0.7;
+  border: 1px solid #cfd8dc !important;
+  transition: none;
+}
+/* Input error para agregar jugador */
+.input-error::placeholder {
+  color: #c0392b !important;
+  opacity: 1;
+  font-weight: bold;
+}
+.input-error {
+  border: 2px solid #c0392b !important;
+  background: #fff6f6;
+}
+/* --- Responsive Design para móviles y tablets --- */
+@media (max-width: 1024px) {
+  body {
+    grid-template-columns: 1fr;
+    padding: 10px;
+    max-width: 100vw;
+  }
+  .sidebar {
+    position: static;
+    width: 100%;
+    min-width: unset;
+    max-width: 100%;
+    margin-top: 20px;
+    box-shadow: none;
+  }
+  .main-content {
+    gap: 12px;
+  }
+  .container {
+    border-radius: 10px;
+    padding: 10px;
+  }
+  #rankingTable, #teamRankingTable {
+    min-width: unset;
+    width: 100%;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 4px;
+    font-size: 0.98rem;
+  }
+  h1 {
+    font-size: 1.3rem;
+  }
+  .container {
+    padding: 6px;
+  }
+  .player-info, .player-rating {
+    font-size: 0.98rem;
+  }
+  .btn-success, .btn-primary, .btn-warning, .btn-danger {
+    padding: 8px 14px;
+    font-size: 0.98rem;
+  }
+  #rankingTable th, #rankingTable td, #teamRankingTable th, #teamRankingTable td {
+    padding: 6px 4px;
+  }
+}
 * {
     box-sizing: border-box;
     margin: 0;
@@ -155,11 +226,16 @@ button:hover {
 }
 
 .btn-danger {
-    background-color: #e74c3c;
+  background: #e74c3c;
+  color: #fff;
+  border: 2px solid #e74c3c;
+  transition: background 0.2s, color 0.2s, border 0.2s;
 }
 
 .btn-danger:hover {
-    background-color: #c0392b;
+  background: #fff;
+  color: #e74c3c;
+  border: 2px solid #e74c3c;
 }
 
 .btn-small {
@@ -628,6 +704,10 @@ h1 {
   color: var(--primary-600);
   letter-spacing: 0.5px;
   text-shadow: 0 2px 4px rgba(41, 128, 185, 0.15);
+  font-family: 'Montserrat', 'Segoe UI', 'Comme', Arial, sans-serif;
+  font-weight: 800;
+  font-size: 2.6rem;
+  margin-bottom: 18px;
 }
 
 .container {
@@ -687,6 +767,12 @@ input, select {
 
 input::placeholder {
   color: #9aa4ad;
+}
+
+input.input-error::placeholder {
+  color: #c0392b !important;
+  opacity: 1;
+  font-weight: bold;
 }
 
 input:focus, select:focus {

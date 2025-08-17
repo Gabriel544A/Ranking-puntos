@@ -484,6 +484,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configurar sincronización periódica
     setInterval(syncData, 30000); // Sincronizar cada 30 segundos
     
+    // Validación dinámica del formulario de partido
+    const matchForm = document.getElementById('matchForm');
+    const matchBtn = matchForm.querySelector('button[type="submit"]');
+    function validarFormPartido() {
+        const p1 = matchForm.player1.value;
+        const p2 = matchForm.player2.value;
+        const p3 = matchForm.player3.value;
+        const p4 = matchForm.player4.value;
+        const sA = matchForm.scoreA.value;
+        const sB = matchForm.scoreB.value;
+        const fecha = matchForm.date.value;
+        // Todos los campos deben estar completos y jugadores distintos
+        const jugadores = [p1, p2, p3, p4];
+        const jugadoresUnicos = new Set(jugadores);
+        const valido = jugadores.every(v => v) && jugadoresUnicos.size === 4 && sA !== '' && sB !== '' && fecha !== '';
+        matchBtn.disabled = !valido;
+    }
+    matchForm.addEventListener('input', validarFormPartido);
+    validarFormPartido();
     // Manejar el formulario de partido
     document.getElementById('matchForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -593,20 +612,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Manejar confirmación de eliminación
+    // Manejar confirmación de eliminación de partido
     document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-        if (editModeEnabled && playerToDelete) {
-            deletePlayer(playerToDelete);
-            confirmDeleteModal.style.display = 'none';
-            playerToDelete = null;
-            updateStats();
+        const modal = document.getElementById('confirmDeleteModal');
+        const matchId = modal.dataset.matchId ? parseInt(modal.dataset.matchId) : null;
+        if (matchId) {
+            deleteMatch(matchId);
         }
+        modal.style.display = 'none';
+        modal.dataset.matchId = '';
     });
-    
-    // Manejar cancelación de eliminación
+    // Manejar cancelación de eliminación de partido
     document.getElementById('cancelDeleteBtn').addEventListener('click', function() {
-        confirmDeleteModal.style.display = 'none';
-        editModal.style.display = 'block';
-        playerToDelete = null;
+        const modal = document.getElementById('confirmDeleteModal');
+        modal.style.display = 'none';
+        modal.dataset.matchId = '';
     });
     
     // Manejar botón de habilitar edición
@@ -885,11 +905,30 @@ function addNewPlayer() {
     const name = nameInput.value.trim();
     
     if (!name) {
-        alert('Por favor ingresa un nombre para el jugador');
+        mostrarErrorJugador('Por favor ingresa un nombre para el jugador.');
         return;
     }
     
+    // Limpiar error si se agregó correctamente
+    mostrarErrorJugador('');
     // Verificar si el jugador ya existe
+// Mostrar mensaje de error en la gestión de jugadores
+function mostrarErrorJugador(msg) {
+    const nameInput = document.getElementById('newPlayerName');
+    if (!nameInput) return;
+    if (msg) {
+        nameInput.classList.add('input-error');
+        nameInput.value = '';
+        nameInput.placeholder = msg;
+        setTimeout(() => {
+            nameInput.classList.remove('input-error');
+            nameInput.placeholder = 'Nombre del nuevo jugador';
+        }, 2200);
+    } else {
+        nameInput.classList.remove('input-error');
+        nameInput.placeholder = 'Nombre del nuevo jugador';
+    }
+}
     const existingPlayerIndex = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
     
     if (existingPlayerIndex >= 0) {
@@ -1050,11 +1089,16 @@ function deletePlayer(playerId) {
 
 // Confirmar eliminación de partido
 function confirmDeleteMatch(matchId) {
+    // Cambiar el texto del modal para partidos
+    const modalTitle = document.querySelector('#confirmDeleteModal .modal-content h2');
+    const modalText = document.getElementById('deleteConfirmationText');
+    if (modalTitle) modalTitle.textContent = '🗑️ ¿Eliminar Partido?';
+    if (modalText) modalText.textContent = '¿Estás seguro de que deseas eliminar este partido? Esta acción no se puede deshacer.';
     if (!editModeEnabled) return;
-    
-    if (confirm('¿Estás seguro de que deseas eliminar este partido? Esta acción no se puede deshacer.')) {
-        deleteMatch(matchId);
-    }
+    // Mostrar modal de confirmación
+    const modal = document.getElementById('confirmDeleteModal');
+    modal.style.display = 'block';
+    modal.dataset.matchId = matchId;
 }
 
 // Eliminar partido
