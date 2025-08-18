@@ -932,7 +932,10 @@ function addNewPlayer() {
     if (!editModeEnabled) return;
     
     const nameInput = document.getElementById('newPlayerName');
-    const name = nameInput.value.trim();
+    let name = nameInput.value.trim();
+    if (name.length > 0) {
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+    }
     
     if (!name) {
         mostrarErrorJugador('Por favor ingresa un nombre para el jugador.');
