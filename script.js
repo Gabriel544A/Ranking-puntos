@@ -33,9 +33,9 @@ async function loadMatchesFromFirestore() {
     const cloudMatches = [];
     querySnapshot.forEach((doc) => {
         const data = doc.data();
-        // Asegúrate de que los campos coincidan con tu estructura local
+        // Usar el ID asignado al partido, no el ID del documento
         cloudMatches.push({
-            id: doc.id, // Usa el id de Firestore como identificador único
+            id: Number(data.id), // Asegurar que el ID sea número
             date: data.fecha,
             teamA: data.parejaA.map(Number),
             teamB: data.parejaB.map(Number),
@@ -46,7 +46,8 @@ async function loadMatchesFromFirestore() {
         });
     });
     if (cloudMatches.length > 0) {
-        matches = cloudMatches;
+        // Ordenar por ID descendente antes de guardar
+        matches = cloudMatches.sort((a, b) => b.id - a.id);
         localStorage.setItem('padelMatches', JSON.stringify(matches));
     }
 }
@@ -1552,13 +1553,32 @@ function registerMatch() {
     document.getElementById("matchForm").reset();
 }
 
+// Función para obtener el siguiente ID de partido
+async function getNextMatchId() {
+    if (!window.db) return matches.length + 1;
+    const querySnapshot = await window.getDocs(window.collection(window.db, "partidos"));
+    const ids = [];
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.id) ids.push(parseInt(data.id));
+    });
+    return ids.length > 0 ? Math.max(...ids) + 1 : 1;
+}
+
 // Función para agregar partido a Firestore
 async function agregarPartido(partido) {
     try {
+        // Asignar ID secuencial al partido
+        partido.id = await getNextMatchId();
+        
+        // Agregar timestamps
+        partido.createdAt = Date.now();
+        partido.updatedAt = Date.now();
+
         await window.addDoc(window.collection(window.db, "partidos"), partido);
         alert("Partido registrado correctamente.");
-        // Aquí puedes recargar la tabla de partidos si tienes esa función
     } catch (error) {
+        console.error("Error al registrar partido:", error);
         alert("Error al registrar el partido: " + error.message);
     }
 }
@@ -1570,12 +1590,12 @@ document.getElementById("matchForm").addEventListener("submit", async function(e
     const partido = {
         fecha: document.getElementById("date").value || new Date().toISOString().slice(0,10),
         parejaA: [
-            document.getElementById("player1").value,
-            document.getElementById("player2").value
+            parseInt(document.getElementById("player1").value),
+            parseInt(document.getElementById("player2").value)
         ],
         parejaB: [
-            document.getElementById("player3").value,
-            document.getElementById("player4").value
+            parseInt(document.getElementById("player3").value),
+            parseInt(document.getElementById("player4").value)
         ],
         puntosA: parseInt(document.getElementById("scoreA").value, 10),
         puntosB: parseInt(document.getElementById("scoreB").value, 10)
@@ -1811,8 +1831,17 @@ function renderMatches() {
         return;
     }
     
-    // Ordenar partidos por fecha (más reciente primero)
-    const sortedMatches = [...matches].sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Ordenar partidos por ID descendente (más nuevo a más antiguo)
+    const sortedMatches = [...matches]
+        .sort((a, b) => {
+            // Primero ordenar por ID descendente
+            if (b.id !== a.id) {
+                return b.id - a.id;
+            }
+            // Si por alguna razón tienen el mismo ID, ordenar por fecha
+            return new Date(b.date) - new Date(a.date);
+        })
+        .slice(0, 15); // Tomar solo los 15 más recientes
     
     sortedMatches.forEach(match => {
         // Obtener jugadores (con verificación por si alguno fue eliminado)
