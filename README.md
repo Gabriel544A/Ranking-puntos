@@ -2,11 +2,10 @@
 
 │
 
-├── index.html          (archivo principal)
+├── index.html
 
-├── script.js           (lógica de la aplicación)
+├── script.js
 
-├── styles.css          (estilos)
+├── styles.css
 
-└── firebase-config.js  (configuración aparte)
-
+└── firebase-config.js
