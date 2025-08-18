@@ -187,13 +187,13 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     background-color: #f8f9fa;
     color: #333;
     display: grid;
     grid-template-columns: 1fr 480px;
     gap: 20px;
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
     min-height: 100vh;
 }
@@ -229,7 +229,6 @@ h1 {
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     border: 1px solid #e0e0e0;
-    max-width: 980px;
     width: 100%;
     margin-left: auto;
     margin-right: auto;
