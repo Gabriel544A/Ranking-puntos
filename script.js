@@ -1188,25 +1188,33 @@ function recalculateAllRatings() {
 }
 
 // Renderizar lista de jugadores
-function renderPlayersList() {
+function renderPlayersList(showAll = false) {
     const playerList = document.getElementById('playerList');
-    
+    const showAllBtn = document.getElementById('showAllPlayersBtn');
     if (players.length === 0) {
         playerList.innerHTML = '<div class="no-players">No hay jugadores registrados</div>';
+        if (showAllBtn) showAllBtn.style.display = 'none';
         return;
     }
-    
     playerList.innerHTML = '';
-    
-    // Ordenar jugadores por nombre
     const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
-    
-    sortedPlayers.forEach(player => {
+    let toShow = sortedPlayers;
+    if (!showAll && sortedPlayers.length > 7) {
+        toShow = sortedPlayers.slice(0, 7);
+        if (showAllBtn) {
+            showAllBtn.style.display = 'inline-block';
+            showAllBtn.textContent = 'Mostrar todos';
+        }
+    } else {
+        if (showAllBtn) {
+            showAllBtn.style.display = sortedPlayers.length > 7 ? 'inline-block' : 'none';
+            showAllBtn.textContent = 'Mostrar menos';
+        }
+    }
+    toShow.forEach(player => {
         const avgPoints = calculateAveragePoints(player);
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
-        
-        // Solo shimmer, sin emoji en el nombre
         let topPlayers = getTopPlayers();
         let idx = topPlayers.findIndex(p => p.id === player.id);
         let nameHtml = '';
@@ -1226,9 +1234,13 @@ function renderPlayersList() {
                     </button>
             </div>
         `;
-        
         playerList.appendChild(playerItem);
     });
+    if (showAllBtn) {
+        showAllBtn.onclick = function() {
+            renderPlayersList(!showAll);
+        };
+    }
 }
 
 // Renderizar jugadores en los dropdowns
@@ -1249,7 +1261,7 @@ function renderPlayersDropdown() {
         const dropdown = document.getElementById(dropdownId);
         const currentValue = dropdown.value;
         
-        dropdown.innerHTML = '<option value="">Seleccionar jugador</option>';
+    dropdown.innerHTML = '<option value="" disabled selected hidden>Seleccionar jugador</option>';
         
         // Ordenar jugadores por nombre
         const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
