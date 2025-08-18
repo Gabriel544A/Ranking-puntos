@@ -1256,28 +1256,62 @@ function confirmDeleteMatch(matchId) {
 async function deleteMatch(matchId) {
     if (!editModeEnabled) return;
     
+    console.log('Iniciando proceso de eliminación para partido:', matchId);
+    
     try {
+        // Asegurarnos de que matchId sea número para comparaciones consistentes
+        const matchIdNum = Number(matchId);
+        
         // Eliminar partido de Firestore primero
         if (window.db) {
-            const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
-            await deleteDoc(doc(window.db, "partidos", matchId));
+            const { getDocs, collection, doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
+            
+            // Buscar el documento correcto
+            const querySnapshot = await getDocs(collection(window.db, "partidos"));
+            let docId = null;
+            
+            for (const document of querySnapshot.docs) {
+                const data = document.data();
+                if (Number(data.id) === matchIdNum) {
+                    docId = document.id;
+                    break;
+                }
+            }
+            
+            if (docId) {
+                console.log('Documento encontrado en Firestore, procediendo a eliminar:', docId);
+                await deleteDoc(doc(window.db, "partidos", docId));
+            } else {
+                console.error('No se encontró el partido en Firestore:', matchIdNum);
+                throw new Error('Partido no encontrado en la base de datos');
+            }
         }
         
         // Eliminar partido local
-        const matchIndex = matches.findIndex(m => m.id === matchId);
-        if (matchIndex === -1) return;
+        const matchIndex = matches.findIndex(m => Number(m.id) === matchIdNum);
+        if (matchIndex === -1) {
+            console.error('Partido no encontrado localmente:', matchIdNum);
+            throw new Error('Partido no encontrado localmente');
+        }
         
         matches.splice(matchIndex, 1);
         saveMatches();
         
-        // Reiniciar puntuaciones de todos los jugadores
-        players.forEach(player => {
-            player.rating = 0;
-            player.matches = 0;
-            player.wins = 0;
-            player.losses = 0;
-            player.pointsHistory = [];
-        });
+        console.log('Partido eliminado localmente, recalculando puntuaciones...');
+        
+        // Recalcular puntuaciones
+        await recalculateAllRatings();
+        
+        // Actualizar UI
+        renderPlayersList();
+        renderPlayersDropdown();
+        renderRanking();
+        renderTeamRanking();
+        renderMatches();
+        updateStats();
+        
+        console.log('Proceso de eliminación completado exitosamente');
+        return true;
         
         // Recalcular basado en los partidos existentes
         matches.forEach(match => {
