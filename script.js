@@ -1129,19 +1129,35 @@ function savePlayerChanges() {
 function deletePlayer(playerId) {
     if (!editModeEnabled) return;
     
-    // Eliminar jugador
+    // Eliminar jugador local
     players = players.filter(p => p.id !== playerId);
-    
+
     // Eliminar partidos que incluían a este jugador
     matches = matches.filter(match => 
         !match.teamA.includes(playerId) && !match.teamB.includes(playerId)
     );
-    
+
+    // Eliminar jugador en Firestore
+    if (window.db) {
+        // Buscar el documento por id
+        window.getDocs(window.collection(window.db, "jugadores")).then(snapshot => {
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if ((data.id && data.id === playerId) || doc.id == playerId) {
+                    window.db && window.db.constructor && window.db.constructor.name === "Firestore" && window.db.app && window.db.app.name;
+                    import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js').then(mod => {
+                        mod.deleteDoc(mod.doc(window.db, "jugadores", doc.id));
+                    });
+                }
+            });
+        });
+    }
+
     // Guardar cambios
     savePlayers();
     saveMatches();
     syncData(); // Sincronizar después de eliminar un jugador
-    
+
     // Actualizar la UI
     renderPlayersList();
     renderPlayersDropdown();
