@@ -1107,45 +1107,59 @@ function editPlayer(playerId) {
 }
 
 // Guardar cambios del jugador
-function savePlayerChanges() {
+async function savePlayerChanges() {
     if (!editModeEnabled) return;
-    
+
     const newName = document.getElementById('editPlayerName').value.trim();
-    
     if (!newName) {
         alert('El nombre no puede estar vacío');
         return;
     }
-    
+
     // Verificar si el nombre ya existe en otro jugador
-    const existingPlayer = players.find(p => 
-        p.id !== currentEditingPlayerId && 
+    const existingPlayer = players.find(p =>
+        p.id !== currentEditingPlayerId &&
         p.name.toLowerCase() === newName.toLowerCase()
     );
-    
     if (existingPlayer) {
         alert(`Ya existe otro jugador con el nombre "${newName}"`);
         return;
     }
-    
+
     const playerIndex = players.findIndex(p => p.id === currentEditingPlayerId);
     if (playerIndex === -1) return;
-    
-    // Actualizar datos del jugador
+
+    // Actualizar datos del jugador local
     players[playerIndex].name = newName;
     players[playerIndex].color = selectedColor;
     players[playerIndex].updatedAt = Date.now();
-    
+
     savePlayers();
-    syncData(); // Sincronizar después de actualizar un jugador
-    
+    syncData();
+
+    // Actualizar en Firestore
+    if (window.db) {
+        const { getDocs, collection, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
+        const querySnapshot = await getDocs(collection(window.db, "jugadores"));
+        querySnapshot.forEach(async (document) => {
+            const data = document.data();
+            if ((data.id || document.id) == currentEditingPlayerId) {
+                await updateDoc(doc(window.db, "jugadores", document.id), {
+                    name: newName,
+                    color: selectedColor,
+                    updatedAt: Date.now()
+                });
+            }
+        });
+    }
+
     renderPlayersList();
     renderPlayersDropdown();
     renderRanking();
-    renderTeamRanking(); // Actualizar ranking de parejas
+    renderTeamRanking();
     renderMatches();
     updateStats();
-    
+
     document.getElementById('editPlayerModal').style.display = 'none';
 }
 
