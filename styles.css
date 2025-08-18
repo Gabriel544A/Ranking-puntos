@@ -2435,3 +2435,13 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
   --info: #9b59b6;
   --info-700: #8e44ad;
 }
+
+.footer {
+  text-align: center;
+  padding: 12px;
+  margin-top: 30px;
+  font-size: 0.9rem;
+  color: #777;
+  font-style: italic;
+  border-top: 1px solid #e0e0e0;
+}
