@@ -1,3 +1,23 @@
+// Función para poner la fecha actual en GMT-3 en el input date
+function setTodayDateGMT3() {
+    const dateInput = document.getElementById('date');
+    if (dateInput && !dateInput.value) {
+        const now = new Date();
+        const offsetMs = -3 * 60 * 60 * 1000;
+        const gmt3 = new Date(now.getTime() + offsetMs);
+        const year = gmt3.getUTCFullYear();
+        const month = String(gmt3.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(gmt3.getUTCDate()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', setTodayDateGMT3);
+
+// También poner la fecha cada vez que se habilita el modo edición o se muestra el formulario
+document.getElementById('enableEditBtn').addEventListener('click', function() {
+    setTimeout(setTodayDateGMT3, 100); // Espera a que el formulario se muestre
+});
 // Colores predefinidos con nombres descriptivos
 const predefinedColors = [
     { hex: '#3498db', name: 'Azul' },
@@ -494,12 +514,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const p4 = matchForm.player4.value;
         const sA = matchForm.scoreA.value;
         const sB = matchForm.scoreB.value;
-        const fecha = matchForm.date.value;
-        // Todos los campos deben estar completos y jugadores distintos
-        const jugadores = [p1, p2, p3, p4];
-        const jugadoresUnicos = new Set(jugadores);
-        const valido = jugadores.every(v => v) && jugadoresUnicos.size === 4 && sA !== '' && sB !== '' && fecha !== '';
-        matchBtn.disabled = !valido;
+    // Todos los campos deben estar completos y jugadores distintos
+    const jugadores = [p1, p2, p3, p4];
+    const jugadoresUnicos = new Set(jugadores);
+    const valido = jugadores.every(v => v) && jugadoresUnicos.size === 4 && sA !== '' && sB !== '';
+    matchBtn.disabled = !valido;
     }
     matchForm.addEventListener('input', validarFormPartido);
     validarFormPartido();
@@ -508,6 +527,14 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         if (editModeEnabled) {
             registerMatch();
+            // Limpiar el campo de fecha para el próximo registro y poner la fecha actual automáticamente
+            setTimeout(() => {
+                const dateInput = document.getElementById('date');
+                if (dateInput) {
+                    dateInput.value = '';
+                    setTodayDateGMT3();
+                }
+            }, 100);
         }
     });
     
@@ -616,7 +643,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
         const modal = document.getElementById('confirmDeleteModal');
         const matchId = modal.dataset.matchId ? parseInt(modal.dataset.matchId) : null;
-        if (matchId) {
+        if (playerToDelete !== null) {
+            deletePlayer(playerToDelete);
+            playerToDelete = null;
+        } else if (matchId) {
             deleteMatch(matchId);
         }
         modal.style.display = 'none';
@@ -1118,7 +1148,8 @@ function deleteMatch(matchId) {
     
     // Recalcular puntuaciones de todos los jugadores
     recalculateAllRatings();
-    
+    savePlayers();
+    renderPlayersList();
     // Actualizar la UI
     renderRanking();
     renderTeamRanking();
@@ -1179,7 +1210,7 @@ function renderPlayersList() {
             </div>
             <div class="action-buttons">
                     <button class="edit-player-btn" onclick="editPlayer(${player.id})" title="Editar jugador" style="${editModeEnabled ? 'display: inline-flex;' : 'display: none;'}">
-                        <span style="font-size:1.2em;">✏️</span>
+                        <span style="font-size:1.2em;">🖋️</span>
                     </button>
             </div>
         `;
@@ -1262,6 +1293,14 @@ function registerMatch() {
         date = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
         document.getElementById('date').value = date;
     }
+    // También establecer el valor por defecto al cargar el formulario si está vacío
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('date');
+        if (dateInput && !dateInput.value) {
+            const today = new Date();
+            dateInput.value = today.toISOString().split('T')[0];
+        }
+    });
     
     // Validar que no hay jugadores repetidos
     const uniquePlayers = new Set([player1Id, player2Id, player3Id, player4Id]);
@@ -1541,9 +1580,9 @@ function renderMatches() {
         const winners = match.scoreA > match.scoreB ? 
             `${player1.name} & ${player2.name}` : `${player3.name} & ${player4.name}`;
         
-        // Formatear fecha
-        const dateObj = new Date(match.date);
-        const formattedDate = dateObj.toLocaleDateString('es-ES');
+    // Formatear fecha en GMT-3
+    const dateObj = new Date(match.date + 'T00:00:00-03:00');
+    const formattedDate = dateObj.toLocaleDateString('es-ES');
         
         const row = document.createElement('tr');
         row.innerHTML = `
