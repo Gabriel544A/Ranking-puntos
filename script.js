@@ -518,8 +518,8 @@ function generateColorOptions() {
 }
 
 // Inicialización al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    loadPlayers();
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadPlayers(); // Espera a que los jugadores se carguen
     loadMatches();
     renderPlayersList();
     renderPlayersDropdown();
@@ -710,30 +710,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function loadPlayers() {
+async function loadPlayers() {
   // Primero intenta cargar desde Firestore
-  loadPlayersFromFirestore().then(() => {
-    // Si no hay jugadores en la nube, carga local
-    if (players.length === 0) {
-      const storedPlayers = localStorage.getItem('padelPlayers');
-      if (storedPlayers) {
-        players = JSON.parse(storedPlayers);
-        if (players.length > 0) {
-          nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
-        }
-        players.forEach(player => {
-          if (!player.pointsHistory) {
-            player.pointsHistory = [];
-          }
-        });
+  await loadPlayersFromFirestore();
+  // Si no hay jugadores en la nube, carga local
+  if (players.length === 0) {
+    const storedPlayers = localStorage.getItem('padelPlayers');
+    if (storedPlayers) {
+      players = JSON.parse(storedPlayers);
+      if (players.length > 0) {
+        nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
       }
+      players.forEach(player => {
+        if (!player.pointsHistory) {
+          player.pointsHistory = [];
+        }
+      });
     }
-    // Cargar timestamp de última sincronización
-    const lastSync = localStorage.getItem('lastSyncTimestamp');
-    if (lastSync) {
-      lastSyncTimestamp = parseInt(lastSync);
-    }
-  });
+  }
+  // Cargar timestamp de última sincronización
+  const lastSync = localStorage.getItem('lastSyncTimestamp');
+  if (lastSync) {
+    lastSyncTimestamp = parseInt(lastSync);
+  }
 }
 
 // Cargar partidos desde localStorage
@@ -1415,9 +1414,44 @@ function registerMatch() {
     renderPlayersList();
     updateStats();
     
-    // Limpiar formulario
-    document.getElementById('matchForm').reset();
+    // Limpia el formulario si quieres
+    document.getElementById("matchForm").reset();
 }
+
+// Función para agregar partido a Firestore
+async function agregarPartido(partido) {
+    try {
+        await window.addDoc(window.collection(window.db, "partidos"), partido);
+        alert("Partido registrado correctamente.");
+        // Aquí puedes recargar la tabla de partidos si tienes esa función
+    } catch (error) {
+        alert("Error al registrar el partido: " + error.message);
+    }
+}
+
+// Conectar el formulario con la función
+document.getElementById("matchForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const partido = {
+        fecha: document.getElementById("date").value || new Date().toISOString().slice(0,10),
+        parejaA: [
+            document.getElementById("player1").value,
+            document.getElementById("player2").value
+        ],
+        parejaB: [
+            document.getElementById("player3").value,
+            document.getElementById("player4").value
+        ],
+        puntosA: parseInt(document.getElementById("scoreA").value, 10),
+        puntosB: parseInt(document.getElementById("scoreB").value, 10)
+    };
+
+    await agregarPartido(partido);
+
+    // Limpia el formulario si quieres
+    this.reset();
+});
 
 // Actualizar puntuaciones basado en el partido
 function updateRatings(match) {
