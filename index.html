@@ -245,6 +245,52 @@
     <!-- Input oculto para importar archivo -->
     <input type="file" id="importFileInput" accept=".json" style="display: none;">
 
-    <script src="script.js"></script>
+        <!-- Firebase: inicialización y ejemplos de Firestore -->
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+            import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+            // Configuración de Firebase
+            const firebaseConfig = {
+                apiKey: "AIzaSyBg7KLIPC838GX5X8rSvKnTdskIal9W17E",
+                authDomain: "rankingpadel-1100e.firebaseapp.com",
+                projectId: "rankingpadel-1100e",
+                storageBucket: "rankingpadel-1100e.firebasestorage.app",
+                messagingSenderId: "998674545523",
+                appId: "1:998674545523:web:f68401b0081d25db91a306",
+                measurementId: "G-HHLJLSEDRZ"
+            };
+
+            // Inicializa Firebase y Firestore
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
+            const db = getFirestore(app);
+
+            // Ejemplo: agregar un jugador
+            async function agregarJugador(nombre, puntos) {
+                await addDoc(collection(db, "jugadores"), { nombre, puntos });
+                console.log("Jugador agregado");
+            }
+
+            // Ejemplo: obtener todos los jugadores
+            async function obtenerJugadores() {
+                const querySnapshot = await getDocs(collection(db, "jugadores"));
+                querySnapshot.forEach((doc) => {
+                    console.log(doc.id, " => ", doc.data());
+                });
+            }
+
+            // Puedes llamar a estas funciones desde la consola para probar:
+            // agregarJugador("Juan", 100);
+            // obtenerJugadores();
+
+            // Exponer Firestore y funciones en window para script.js
+            window.db = db;
+            window.getDocs = getDocs;
+            window.collection = collection;
+            window.addDoc = addDoc;
+        </script>
+        <script src="script.js"></script>
 </body>
 </html>

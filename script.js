@@ -1,3 +1,31 @@
+// --- FIREBASE INTEGRACIÓN ---
+let db = null;
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.db) db = window.db;
+});
+
+// Cargar jugadores desde Firestore
+async function loadPlayersFromFirestore() {
+  if (!db) return;
+  const querySnapshot = await window.getDocs(window.collection(db, "jugadores"));
+  const cloudPlayers = [];
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    cloudPlayers.push({ ...data, id: data.id || doc.id });
+  });
+  if (cloudPlayers.length > 0) {
+    players = cloudPlayers;
+    localStorage.setItem('padelPlayers', JSON.stringify(players));
+    nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
+  }
+}
+
+// Guardar jugador en Firestore
+async function savePlayerToFirestore(player) {
+  if (!db) return;
+  await window.addDoc(window.collection(db, "jugadores"), player);
+}
+
 // Función para poner la fecha actual en GMT-3 en el input date
 function setTodayDateGMT3() {
     const dateInput = document.getElementById('date');
@@ -682,29 +710,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Cargar jugadores desde localStorage
 function loadPlayers() {
-    const storedPlayers = localStorage.getItem('padelPlayers');
-    if (storedPlayers) {
+  // Primero intenta cargar desde Firestore
+  loadPlayersFromFirestore().then(() => {
+    // Si no hay jugadores en la nube, carga local
+    if (players.length === 0) {
+      const storedPlayers = localStorage.getItem('padelPlayers');
+      if (storedPlayers) {
         players = JSON.parse(storedPlayers);
-        // Calcular el próximo ID disponible
         if (players.length > 0) {
-            nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
+          nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
         }
-        
-        // Asegurarse que todos los jugadores tengan pointsHistory
         players.forEach(player => {
-            if (!player.pointsHistory) {
-                player.pointsHistory = [];
-            }
+          if (!player.pointsHistory) {
+            player.pointsHistory = [];
+          }
         });
+      }
     }
-    
     // Cargar timestamp de última sincronización
     const lastSync = localStorage.getItem('lastSyncTimestamp');
     if (lastSync) {
-        lastSyncTimestamp = parseInt(lastSync);
+      lastSyncTimestamp = parseInt(lastSync);
     }
+  });
 }
 
 // Cargar partidos desde localStorage
@@ -1016,10 +1045,12 @@ function mostrarErrorJugador(msg) {
     
     players.push(newPlayer);
     savePlayers();
+    savePlayerToFirestore(newPlayer); // Guarda en Firestore
     syncData();
     
     // Actualizar la UI
     renderPlayersList();
+    
     renderPlayersDropdown();
     renderRanking();
     updateStats();
