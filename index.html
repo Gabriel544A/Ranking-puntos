@@ -41,6 +41,25 @@
         </div>
         
         <div class="container">
+            <h2>📜 Historial de Partidos</h2>
+            <table id="matchesTable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Pareja A</th>
+                        <th>Pareja B</th>
+                        <th>Resultado</th>
+                        <th>Ganadores</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los partidos se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="container">
             <h2>📝 Registrar Nuevo Partido</h2>
             <form id="matchForm" style="display: none;">
                 <div class="form-row-block">
@@ -96,25 +115,6 @@
             </form>
         </div>
         
-        <div class="container">
-            <h2>📜 Historial de Partidos</h2>
-            <table id="matchesTable">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Pareja A</th>
-                        <th>Pareja B</th>
-                        <th>Resultado</th>
-                        <th>Ganadores</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Los partidos se cargarán aquí -->
-                </tbody>
-            </table>
-        </div>
-        
         <!-- Contenedor para botones de importación/exportación -->
         <div class="data-management-container">
             <div class="container">
@@ -122,10 +122,10 @@
                 <p>Importa o exporta tus datos para usarlos en diferentes dispositivos</p>
                 <div class="data-buttons">
                     <button id="exportDataBtn" class="btn-primary">
-                        <span>📤</span> Exportar Datos 
+                        <span>📤</span> Exportar Datos (JSON)
                     </button>
                     <button id="importDataBtn" class="btn-warning">
-                        <span>📥</span> Importar Datos
+                        <span>📥</span> Importar Datos (JSON)
                     </button>
                     <button id="enableEditBtn" class="btn-success">
                         <span>🔓</span> Habilitar Edición
