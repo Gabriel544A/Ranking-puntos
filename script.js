@@ -1206,9 +1206,18 @@ function renderPlayersList() {
         const playerItem = document.createElement('div');
         playerItem.className = 'player-item';
         
+        // Solo shimmer, sin emoji en el nombre
+        let topPlayers = getTopPlayers();
+        let idx = topPlayers.findIndex(p => p.id === player.id);
+        let nameHtml = '';
+        if ([0,1,2].includes(idx)) {
+            nameHtml = `<span class="player-name rank-${idx+1} global-top-player">${player.name}</span>`;
+        } else {
+            nameHtml = `<span class="player-name">${player.name}</span>`;
+        }
         playerItem.innerHTML = `
             <div class="player-info">
-                ${applyPlayerRankStyle(player.name, player.id)}
+                ${nameHtml}
                 <span class="player-rating">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</span>
             </div>
             <div class="action-buttons">
@@ -1447,31 +1456,37 @@ function renderRanking() {
         const row = document.createElement('tr');
 
         const tdPos = document.createElement('td');
-        tdPos.textContent = String(index + 1);
+        let emoji = '';
+        if (index === 0) emoji = '🥇';
+        else if (index === 1) emoji = '🥈';
+        else if (index === 2) emoji = '🥉';
+        tdPos.innerHTML = emoji ? `<span>${emoji}</span>` : `<span>${index + 1}</span>`;
 
-        const tdName = document.createElement('td');
-        tdName.innerHTML = applyPlayerRankStyle(player.name, player.id);
-        // Para el resto, se respeta el color elegido por el jugador (applyPlayerRankStyle ya se encarga de top3)
-        if (![0,1,2].includes(index)) {
-            tdName.style.color = player.color || '#000';
-        }
+            const tdName = document.createElement('td');
+            // El shimmer solo en el nombre si es top3
+            if ([0,1,2].includes(index)) {
+                tdName.innerHTML = `<span class="player-name rank-${index+1} global-top-player">${player.name}</span>`;
+            } else {
+                tdName.innerHTML = `<span class="player-name">${player.name}</span>`;
+                tdName.style.color = player.color || '#000';
+            }
 
-        const tdRating = document.createElement('td');
-        tdRating.textContent = player.rating.toFixed(1).replace('.', ',');
+            const tdRating = document.createElement('td');
+            tdRating.textContent = player.rating.toFixed(1).replace('.', ',');
 
-        const tdAvg = document.createElement('td');
-        tdAvg.textContent = avgPoints.toFixed(1).replace('.', ',');
+            const tdAvg = document.createElement('td');
+            tdAvg.textContent = avgPoints.toFixed(1).replace('.', ',');
 
-        const tdMatches = document.createElement('td');
-        tdMatches.textContent = String(player.matches);
+            const tdMatches = document.createElement('td');
+            tdMatches.textContent = String(player.matches);
 
-        row.appendChild(tdPos);
-        row.appendChild(tdName);
-        row.appendChild(tdRating);
-        row.appendChild(tdAvg);
-        row.appendChild(tdMatches);
+            row.appendChild(tdPos);
+            row.appendChild(tdName);
+            row.appendChild(tdRating);
+            row.appendChild(tdAvg);
+            row.appendChild(tdMatches);
 
-        tableBody.appendChild(row);
+            tableBody.appendChild(row);
     });
 }
 
@@ -1588,18 +1603,26 @@ function renderMatches() {
     const formattedDate = dateObj.toLocaleDateString('es-ES');
         
         const row = document.createElement('tr');
+        // Helper para mostrar solo shimmer sin emoji
+        function playerNameWithShimmer(player) {
+            let topPlayers = getTopPlayers();
+            let idx = topPlayers.findIndex(p => p.id === player.id);
+            if ([0,1,2].includes(idx)) {
+                return `<span class="player-name rank-${idx+1} global-top-player">${player.name}</span>`;
+            } else {
+                return `<span class="player-name">${player.name}</span>`;
+            }
+        }
         row.innerHTML = `
             <td>${formattedDate}</td>
             <td>
-                ${applyPlayerRankStyle(player1.name, player1.id)} & 
-                ${applyPlayerRankStyle(player2.name, player2.id)}
+                ${playerNameWithShimmer(player1)} & ${playerNameWithShimmer(player2)}
             </td>
             <td>
-                ${applyPlayerRankStyle(player3.name, player3.id)} & 
-                ${applyPlayerRankStyle(player4.name, player4.id)}
+                ${playerNameWithShimmer(player3)} & ${playerNameWithShimmer(player4)}
             </td>
             <td>${result}</td>
-            <td>${match.scoreA > match.scoreB ? `${applyPlayerRankStyle(player1.name, player1.id)} & ${applyPlayerRankStyle(player2.name, player2.id)}` : `${applyPlayerRankStyle(player3.name, player3.id)} & ${applyPlayerRankStyle(player4.name, player4.id)}`}</td>
+            <td>${match.scoreA > match.scoreB ? `${playerNameWithShimmer(player1)} & ${playerNameWithShimmer(player2)}` : `${playerNameWithShimmer(player3)} & ${playerNameWithShimmer(player4)}`}</td>
             <td>
                 <button class="btn-danger btn-small delete-match-btn" data-match-id="${match.id}" style="${editModeEnabled ? 'display: flex;' : 'display: none;'}">
                     <span>🗑️</span>

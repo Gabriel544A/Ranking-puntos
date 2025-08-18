@@ -1,3 +1,19 @@
+/* Alineación horizontal de jugadores en historial de partidos */
+.match-players-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.match-player {
+  display: inline-block;
+  min-width: 0;
+  white-space: nowrap;
+}
+.ampersand {
+  color: #888;
+  font-weight: bold;
+  margin: 0 0.2em;
+}
 .form-row-block select,
 .form-row-block input[type="number"] {
   height: 44px;
@@ -678,6 +694,7 @@ button:hover {
   position: relative;
   display: inline-block;
   overflow: visible;
+  vertical-align: middle;
 }
 .global-top-player::after {
   content: "";
@@ -1070,7 +1087,7 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
   display: inline-block;
   width: 10px; height: 10px;
   border-radius: 50%;
-  background-color: currentColor;
+  background-color: #222 !important;
   margin-right: 8px;
   box-shadow: 0 0 0 2px rgba(0,0,0,0.05);
 }
