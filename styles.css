@@ -688,9 +688,11 @@ button:hover {
 #player1, #player2, #player3, #player4 {
     font-family: 'Comme', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-.rank-1, .rank-2, .rank-3 {
-    font-weight: 700 !important;
-    white-space: nowrap;
+/* Corrección para el historial de partidos */
+#matchesTable .rank-1,
+#matchesTable .rank-2,
+#matchesTable .rank-3 {
+  white-space: normal; /* Permite que el texto se divida en varias líneas */
 }
 .rank-1 {
     background: linear-gradient(90deg, #bfa443, #f1d27a, #bfa443);
