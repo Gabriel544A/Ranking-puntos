@@ -26,6 +26,31 @@ async function savePlayerToFirestore(player) {
   await window.addDoc(window.collection(db, "jugadores"), player);
 }
 
+// Cargar partidos desde Firestore
+async function loadMatchesFromFirestore() {
+    if (!db) return;
+    const querySnapshot = await window.getDocs(window.collection(db, "partidos"));
+    const cloudMatches = [];
+    querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        // Asegúrate de que los campos coincidan con tu estructura local
+        cloudMatches.push({
+            id: doc.id, // Usa el id de Firestore como identificador único
+            date: data.fecha,
+            teamA: data.parejaA.map(Number),
+            teamB: data.parejaB.map(Number),
+            scoreA: data.puntosA,
+            scoreB: data.puntosB,
+            createdAt: data.createdAt || Date.now(),
+            updatedAt: data.updatedAt || Date.now()
+        });
+    });
+    if (cloudMatches.length > 0) {
+        matches = cloudMatches;
+        localStorage.setItem('padelMatches', JSON.stringify(matches));
+    }
+}
+
 // Función para poner la fecha actual en GMT-3 en el input date
 function setTodayDateGMT3() {
     const dateInput = document.getElementById('date');
@@ -520,7 +545,7 @@ function generateColorOptions() {
 // Inicialización al cargar la página
 document.addEventListener('DOMContentLoaded', async function() {
     await loadPlayers(); // Espera a que los jugadores se carguen
-    loadMatches();
+    await loadMatchesFromFirestore(); // Espera a que los partidos se carguen
     renderPlayersList();
     renderPlayersDropdown();
     renderRanking();
