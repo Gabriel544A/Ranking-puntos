@@ -71,6 +71,17 @@ document.addEventListener('DOMContentLoaded', setTodayDateGMT3);
 document.getElementById('enableEditBtn').addEventListener('click', function() {
     setTimeout(setTodayDateGMT3, 100); // Espera a que el formulario se muestre
 });
+
+// Manejar eliminación de partido
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('delete-match-btn')) {
+        const matchId = e.target.getAttribute('data-match-id');
+        if (matchId) {
+            confirmDeleteMatch(matchId);
+        }
+    }
+});
+
 // Colores predefinidos con nombres descriptivos
 const predefinedColors = [
     { hex: '#3498db', name: 'Azul' },
@@ -341,10 +352,8 @@ function applyPlayerRankStyle(playerName, playerId) {
 function renderTeamRanking() {
     const tableBody = document.querySelector('#teamRankingTable tbody');
     tableBody.innerHTML = '';
-    
     // Calcular estadísticas de parejas
     const teams = calculateTeamStats();
-    
     // Convertir el objeto de equipos a un array para ordenarlo
     const teamsArray = Object.keys(teams).map(teamId => {
         return {
@@ -352,35 +361,28 @@ function renderTeamRanking() {
             ...teams[teamId]
         };
     });
-    
     // Filtrar equipos que tienen al menos un partido
     const teamsWithMatches = teamsArray.filter(team => team.matches > 0);
-    
     if (teamsWithMatches.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = '<td colspan="5" style="text-align: center;">No hay parejas con partidos registrados</td>';
         tableBody.appendChild(row);
         return;
     }
-    
     // Ordenar equipos por puntos totales descendente
     const sortedTeams = teamsWithMatches.sort((a, b) => b.points - a.points);
-    
     sortedTeams.forEach((team, index) => {
         // Obtener nombres de los jugadores
-        const player1 = players.find(p => p.id === team.players[0]);
-        const player2 = players.find(p => p.id === team.players[1]);
-        
+        const player1 = players.find(p => p.id == team.players[0]);
+        const player2 = players.find(p => p.id == team.players[1]);
         // Si algún jugador no existe (fue eliminado), saltar este equipo
         if (!player1 || !player2) return;
-        
         const avgPoints = calculateTeamAveragePoints(team);
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>
-                ${applyPlayerRankStyle(player1.name, player1.id)} & 
-                ${applyPlayerRankStyle(player2.name, player2.id)}
+                <span class="player-name">${player1.name}</span> & <span class="player-name">${player2.name}</span>
             </td>
             <td>${team.points.toFixed(1).replace('.', ',')}</td>
             <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
@@ -964,13 +966,13 @@ function updateStats() {
         });
         
         const bestTeam = sortedTeams[0];
-        const player1 = players.find(p => p.id === bestTeam.players[0]);
-        const player2 = players.find(p => p.id === bestTeam.players[1]);
+        const player1 = players.find(p => p.id == bestTeam.players[0]);
+        const player2 = players.find(p => p.id == bestTeam.players[1]);
         
         if (player1 && player2) {
             const avgPoints = calculateTeamAveragePoints(bestTeam);
             document.getElementById('topTeam').innerHTML = 
-                `<div>${applyPlayerRankStyle(player1.name, player1.id)} & ${applyPlayerRankStyle(player2.name, player2.id)}</div>
+                `<div><span class="player-name">${player1.name}</span> & <span class="player-name">${player2.name}</span></div>
                 <div class="stat-points">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</div>`;
         } else {
             document.getElementById('topTeam').textContent = 'Datos incompletos';
@@ -980,7 +982,22 @@ function updateStats() {
     }
 }
 
-// Agregar nuevo jugador
+// Actualizar jugador en Firestore por ID
+async function updatePlayerInFirestore(player) {
+    if (!window.db) return;
+    const { getDocs, collection, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
+    const querySnapshot = await getDocs(collection(window.db, "jugadores"));
+    querySnapshot.forEach(async (document) => {
+        const data = document.data();
+        if ((data.id || document.id) == player.id) {
+            await updateDoc(doc(window.db, "jugadores", document.id), {
+                ...player
+            });
+        }
+    });
+}
+
+// Función para agregar un nuevo jugador
 function addNewPlayer() {
     if (!editModeEnabled) return;
     
@@ -998,23 +1015,23 @@ function addNewPlayer() {
     // Limpiar error si se agregó correctamente
     mostrarErrorJugador('');
     // Verificar si el jugador ya existe
-// Mostrar mensaje de error en la gestión de jugadores
-function mostrarErrorJugador(msg) {
-    const nameInput = document.getElementById('newPlayerName');
-    if (!nameInput) return;
-    if (msg) {
-        nameInput.classList.add('input-error');
-        nameInput.value = '';
-        nameInput.placeholder = msg;
-        setTimeout(() => {
+    // Mostrar mensaje de error en la gestión de jugadores
+    function mostrarErrorJugador(msg) {
+        const nameInput = document.getElementById('newPlayerName');
+        if (!nameInput) return;
+        if (msg) {
+            nameInput.classList.add('input-error');
+            nameInput.value = '';
+            nameInput.placeholder = msg;
+            setTimeout(() => {
+                nameInput.classList.remove('input-error');
+                nameInput.placeholder = 'Nombre del nuevo jugador';
+            }, 2200);
+        } else {
             nameInput.classList.remove('input-error');
             nameInput.placeholder = 'Nombre del nuevo jugador';
-        }, 2200);
-    } else {
-        nameInput.classList.remove('input-error');
-        nameInput.placeholder = 'Nombre del nuevo jugador';
+        }
     }
-}
     const existingPlayerIndex = players.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
     
     if (existingPlayerIndex >= 0) {
@@ -1207,38 +1224,112 @@ function deletePlayer(playerId) {
 
 // Confirmar eliminación de partido
 function confirmDeleteMatch(matchId) {
+    if (!editModeEnabled) return;
+    console.log('Confirmando eliminación del partido:', matchId);
+    
     // Cambiar el texto del modal para partidos
     const modalTitle = document.querySelector('#confirmDeleteModal .modal-content h2');
     const modalText = document.getElementById('deleteConfirmationText');
     if (modalTitle) modalTitle.textContent = '🗑️ ¿Eliminar Partido?';
-    if (modalText) modalText.textContent = '¿Estás seguro de que deseas eliminar este partido? Esta acción no se puede deshacer.';
-    if (!editModeEnabled) return;
+    if (modalText) modalText.textContent = '¿Estás seguro de que deseas eliminar este partido? Esta acción actualizará todas las estadísticas y no se puede deshacer.';
+    
     // Mostrar modal de confirmación
     const modal = document.getElementById('confirmDeleteModal');
     modal.style.display = 'block';
     modal.dataset.matchId = matchId;
+    
+    // Configurar el botón de confirmación
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    confirmBtn.onclick = async function() {
+        try {
+            await deleteMatch(matchId);
+            modal.style.display = 'none';
+        } catch (error) {
+            console.error('Error al eliminar partido:', error);
+            alert('Error al eliminar el partido. Por favor, intenta de nuevo.');
+        }
+    };
 }
 
 // Eliminar partido
-function deleteMatch(matchId) {
+async function deleteMatch(matchId) {
     if (!editModeEnabled) return;
     
-    // Encontrar el partido por ID
-    const matchIndex = matches.findIndex(m => m.id === matchId);
-    if (matchIndex === -1) return;
+    try {
+        // Eliminar partido de Firestore primero
+        if (window.db) {
+            const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
+            await deleteDoc(doc(window.db, "partidos", matchId));
+        }
+        
+        // Eliminar partido local
+        const matchIndex = matches.findIndex(m => m.id === matchId);
+        if (matchIndex === -1) return;
+        
+        matches.splice(matchIndex, 1);
+        saveMatches();
+        
+        // Reiniciar puntuaciones de todos los jugadores
+        players.forEach(player => {
+            player.rating = 0;
+            player.matches = 0;
+            player.wins = 0;
+            player.losses = 0;
+            player.pointsHistory = [];
+        });
+        
+        // Recalcular basado en los partidos existentes
+        matches.forEach(match => {
+            updateRatings(match);
+        });
+        
+        // Actualizar todos los jugadores en Firebase
+        for (const player of players) {
+            await updatePlayerInFirestore(player);
+        }
+        
+        // Guardar cambios locales
+        savePlayers();
+        syncData();
+        
+        // Actualizar toda la UI
+        renderPlayersList();
+        renderPlayersDropdown();
+        renderRanking();
+        renderTeamRanking();
+        renderMatches();
+        updateStats();
+    } catch (error) {
+        console.error('Error al eliminar el partido:', error);
+        alert('Error al eliminar el partido. Por favor, intenta de nuevo.');
+    }
     
-    // Eliminar partido
-    matches.splice(matchIndex, 1);
+    // Reiniciar puntuaciones de todos los jugadores
+    players.forEach(player => {
+        player.rating = 0;
+        player.matches = 0;
+        player.wins = 0;
+        player.losses = 0;
+        player.pointsHistory = [];
+    });
     
-    // Guardar cambios
-    saveMatches();
+    // Recalcular basado en los partidos existentes
+    matches.forEach(match => {
+        updateRatings(match);
+    });
+    
+    // Actualizar todos los jugadores en Firebase
+    players.forEach(player => {
+        updatePlayerInFirestore(player);
+    });
+    
+    // Guardar cambios locales
+    savePlayers();
     syncData();
     
-    // Recalcular puntuaciones de todos los jugadores
-    recalculateAllRatings();
-    savePlayers();
+    // Actualizar toda la UI
     renderPlayersList();
-    // Actualizar la UI
+    renderPlayersDropdown();
     renderRanking();
     renderTeamRanking();
     renderMatches();
@@ -1270,6 +1361,10 @@ function recalculateAllRatings() {
     });
     
     savePlayers();
+    // Actualizar todos los jugadores en Firestore
+    players.forEach(player => {
+        updatePlayerInFirestore(player);
+    });
 }
 
 // Renderizar lista de jugadores
@@ -1346,7 +1441,7 @@ function renderPlayersDropdown() {
         const dropdown = document.getElementById(dropdownId);
         const currentValue = dropdown.value;
         
-    dropdown.innerHTML = '<option value="" disabled selected hidden>Seleccionar jugador</option>';
+        dropdown.innerHTML = '<option value="" disabled selected hidden>Seleccionar jugador</option>';
         
         // Ordenar jugadores por nombre
         const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name));
@@ -1572,6 +1667,11 @@ function updateRatings(match) {
     
     // Guardar cambios
     savePlayers();
+    // Actualizar en Firestore los jugadores involucrados
+    updatePlayerInFirestore(player1);
+    updatePlayerInFirestore(player2);
+    updatePlayerInFirestore(player3);
+    updatePlayerInFirestore(player4);
     // No es necesario llamar a syncData() aquí porque ya se llama en registerMatch()
 }
 
@@ -1584,7 +1684,7 @@ function renderRanking() {
     const sortedPlayers = [...players].sort((a, b) => b.rating - a.rating);
 
     sortedPlayers.forEach((player, index) => {
-        const avgPoints = calculateAveragePoints(player);
+        const avgPoints = player.matches > 0 ? calculateAveragePoints(player) : 0;
         const row = document.createElement('tr');
 
         const tdPos = document.createElement('td');
@@ -1595,7 +1695,6 @@ function renderRanking() {
         tdPos.innerHTML = emoji ? `<span>${emoji}</span>` : `<span>${index + 1}</span>`;
 
             const tdName = document.createElement('td');
-            // El shimmer solo en el nombre si es top3
             if ([0,1,2].includes(index)) {
                 tdName.innerHTML = `<span class="player-name rank-${index+1} global-top-player">${player.name}</span>`;
             } else {
@@ -1604,7 +1703,7 @@ function renderRanking() {
             }
 
             const tdRating = document.createElement('td');
-            tdRating.textContent = player.rating.toFixed(1).replace('.', ',');
+            tdRating.textContent = player.matches > 0 ? player.rating.toFixed(1).replace('.', ',') : '0,0';
 
             const tdAvg = document.createElement('td');
             tdAvg.textContent = avgPoints.toFixed(1).replace('.', ',');
@@ -1717,10 +1816,10 @@ function renderMatches() {
     
     sortedMatches.forEach(match => {
         // Obtener jugadores (con verificación por si alguno fue eliminado)
-        const player1 = players.find(p => p.id === match.teamA[0]);
-        const player2 = players.find(p => p.id === match.teamA[1]);
-        const player3 = players.find(p => p.id === match.teamB[0]);
-        const player4 = players.find(p => p.id === match.teamB[1]);
+        const player1 = players.find(p => p.id === Number(match.teamA[0]));
+        const player2 = players.find(p => p.id === Number(match.teamA[1]));
+        const player3 = players.find(p => p.id === Number(match.teamB[0]));
+        const player4 = players.find(p => p.id === Number(match.teamB[1]));
         
         // Si algún jugador no existe (fue eliminado), saltar este partido
         if (!player1 || !player2 || !player3 || !player4) return;
@@ -1767,8 +1866,13 @@ function renderMatches() {
     // Agregar event listeners a los botones de borrar
     document.querySelectorAll('.delete-match-btn').forEach(button => {
         button.addEventListener('click', function() {
-            const matchId = parseInt(this.getAttribute('data-match-id'));
-            confirmDeleteMatch(matchId);
+            const matchId = this.getAttribute('data-match-id');
+            console.log('ID del partido a eliminar:', matchId);
+            if (matchId) {
+                confirmDeleteMatch(matchId);
+            } else {
+                console.error('No se encontró ID del partido');
+            }
         });
     });
 }
