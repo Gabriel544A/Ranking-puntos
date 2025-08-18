@@ -380,10 +380,18 @@ function renderTeamRanking() {
         if (!player1 || !player2) return;
         const avgPoints = calculateTeamAveragePoints(team);
         const row = document.createElement('tr');
+        
+        // Determinar los colores para el top 3
+        let nameColor = '';
+        if (index === 0) nameColor = 'color: gold; font-weight: bold;';
+        else if (index === 1) nameColor = 'color: silver; font-weight: bold;';
+        else if (index === 2) nameColor = 'color: #cd7f32; font-weight: bold;';
+        
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>
-                <span class="player-name">${player1.name}</span> & <span class="player-name">${player2.name}</span>
+                <span class="player-name" style="${nameColor}">${player1.name}</span> & 
+                <span class="player-name" style="${nameColor}">${player2.name}</span>
             </td>
             <td>${team.points.toFixed(1).replace('.', ',')}</td>
             <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
@@ -973,7 +981,7 @@ function updateStats() {
         if (player1 && player2) {
             const avgPoints = calculateTeamAveragePoints(bestTeam);
             document.getElementById('topTeam').innerHTML = 
-                `<div><span class="player-name">${player1.name}</span> & <span class="player-name">${player2.name}</span></div>
+                `<div>${applyPlayerRankStyle(player1.name, player1.id)} & ${applyPlayerRankStyle(player2.name, player2.id)}</div>
                 <div class="stat-points">${avgPoints.toFixed(1).replace('.', ',')} pts/partido</div>`;
         } else {
             document.getElementById('topTeam').textContent = 'Datos incompletos';
