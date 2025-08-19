@@ -346,17 +346,11 @@ function renderTeamRanking() {
         const avgPoints = calculateTeamAveragePoints(team);
         const row = document.createElement('tr');
         
-        // Determinar los colores para el top 3
-        let nameColor = '';
-        if (index === 0) nameColor = 'color: gold; font-weight: bold;';
-        else if (index === 1) nameColor = 'color: silver; font-weight: bold;';
-        else if (index === 2) nameColor = 'color: #cd7f32; font-weight: bold;';
-        
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>
-                <span class="player-name" style="${nameColor}">${player1.name}</span> & 
-                <span class="player-name" style="${nameColor}">${player2.name}</span>
+                ${applyPlayerRankStyle(player1.name, player1.id)} & 
+                ${applyPlayerRankStyle(player2.name, player2.id)}
             </td>
             <td>${team.points.toFixed(1).replace('.', ',')}</td>
             <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
