@@ -324,6 +324,23 @@ function applyPlayerRankStyle(playerName, playerId) {
     return `<span class="player-name">${playerName}</span>`;
 }
 
+// Aplicar solo el color del ranking (sin medalla) para el ranking de parejas
+function applyPlayerRankStyleNoMedal(playerName, playerId) {
+    const topPlayers = getTopPlayers();
+    const playerIndex = topPlayers.findIndex(p => p.id === playerId);
+
+    let className = 'player-name';
+    if (playerIndex === 0) {
+        className += ' rank-1 global-top-player';
+    } else if (playerIndex === 1) {
+        className += ' rank-2 global-top-player';
+    } else if (playerIndex === 2) {
+        className += ' rank-3 global-top-player';
+    }
+
+    return `<span class="${className}">${playerName}</span>`;
+}
+
 // Renderizar el ranking de parejas
 function renderTeamRanking() {
     const tableBody = document.querySelector('#teamRankingTable tbody');
@@ -356,17 +373,11 @@ function renderTeamRanking() {
         const avgPoints = calculateTeamAveragePoints(team);
         const row = document.createElement('tr');
         
-        // Determinar los colores para el top 3
-        let nameColor = '';
-        if (index === 0) nameColor = 'color: gold; font-weight: bold;';
-        else if (index === 1) nameColor = 'color: silver; font-weight: bold;';
-        else if (index === 2) nameColor = 'color: #cd7f32; font-weight: bold;';
-        
         row.innerHTML = `
             <td>${index + 1}</td>
             <td>
-                <span class="player-name" style="${nameColor}">${player1.name}</span> & 
-                <span class="player-name" style="${nameColor}">${player2.name}</span>
+                ${applyPlayerRankStyleNoMedal(player1.name, player1.id)} & 
+                ${applyPlayerRankStyleNoMedal(player2.name, player2.id)}
             </td>
             <td>${team.points.toFixed(1).replace('.', ',')}</td>
             <td>${avgPoints.toFixed(1).replace('.', ',')}</td>
