@@ -11,12 +11,22 @@ async function loadPlayersFromFirestore() {
   const cloudPlayers = [];
   querySnapshot.forEach((doc) => {
     const data = doc.data();
-    cloudPlayers.push({ ...data, id: data.id || doc.id });
+    // --- CORRECCIÓN CLAVE ---
+    // Guardamos tanto el ID numérico de la app como el ID del documento de Firestore.
+    // Esto hace que las actualizaciones futuras sean mucho más eficientes y fiables.
+    cloudPlayers.push({ 
+        ...data, 
+        id: data.id, 
+        firestoreDocId: doc.id // Guardamos la referencia directa al documento
+    });
   });
+
   if (cloudPlayers.length > 0) {
     players = cloudPlayers;
     localStorage.setItem('padelPlayers', JSON.stringify(players));
-    nextPlayerId = Math.max(...players.map(p => p.id)) + 1;
+    // Asegurarse de que nextPlayerId se calcule correctamente
+    const maxId = Math.max(...players.map(p => p.id).filter(id => !isNaN(id)));
+    nextPlayerId = isFinite(maxId) ? maxId + 1 : 1;
   }
 }
 
@@ -714,7 +724,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function loadPlayers() {
   // Primero intenta cargar desde Firestore
   await loadPlayersFromFirestore();
-  // Si no hay jugadores en la nube, carga local
+  // Si no hay jugadores en la nube, carga desde el almacenamiento local
   if (players.length === 0) {
     const storedPlayers = localStorage.getItem('padelPlayers');
     if (storedPlayers) {
@@ -735,6 +745,7 @@ async function loadPlayers() {
     lastSyncTimestamp = parseInt(lastSync);
   }
 }
+
 
 // Cargar partidos desde localStorage
 function loadMatches() {
@@ -959,16 +970,32 @@ function updateStats() {
 // Actualizar jugador en Firestore por ID
 async function updatePlayerInFirestore(player) {
     if (!window.db) return;
-    const { getDocs, collection, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
-    const querySnapshot = await getDocs(collection(window.db, "jugadores"));
-    querySnapshot.forEach(async (document) => {
-        const data = document.data();
-        if ((data.id || document.id) == player.id) {
-            await updateDoc(doc(window.db, "jugadores", document.id), {
-                ...player
-            });
+
+    // Gracias a la corrección, `player.firestoreDocId` ahora existirá,
+    // haciendo que este bloque de código se ejecute de forma fiable.
+    if (player.firestoreDocId) {
+        const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
+        const playerDocRef = doc(window.db, "jugadores", player.firestoreDocId);
+        
+        // Creamos una copia del jugador para no modificar el objeto original
+        const playerData = { ...player };
+        // No es necesario guardar el ID del documento dentro del propio documento
+        delete playerData.firestoreDocId; 
+        
+        await updateDoc(playerDocRef, playerData);
+    } else {
+        // Este método de respaldo ahora es menos probable que se use, pero se mantiene por seguridad.
+        console.warn(`No se encontró firestoreDocId para el jugador ${player.name}. Usando método de búsqueda.`);
+        const { getDocs, collection, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
+        const querySnapshot = await getDocs(collection(window.db, "jugadores"));
+        for (const document of querySnapshot.docs) {
+            const data = document.data();
+            if (data.id == player.id) {
+                await updateDoc(doc(window.db, "jugadores", document.id), player);
+                break;
+            }
         }
-    });
+    }
 }
 
 // Función para agregar un nuevo jugador
@@ -1227,55 +1254,57 @@ function confirmDeleteMatch(matchId) {
 
 // Eliminar partido
 async function deleteMatch(matchId) {
+    // 1. Verifica si el modo de edición está habilitado
     if (!editModeEnabled) return;
-    
+
     console.log('Iniciando proceso de eliminación para partido:', matchId);
-    
+
     try {
-        // Asegurarnos de que matchId sea número para comparaciones consistentes
+        // Aseguramos que el ID sea un número para comparaciones consistentes
         const matchIdNum = Number(matchId);
-        
-        // Eliminar partido de Firestore primero
+
+        // 2. Eliminar el partido de Firestore (si está disponible)
         if (window.db) {
             const { getDocs, collection, doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js');
             
-            // Buscar el documento correcto
             const querySnapshot = await getDocs(collection(window.db, "partidos"));
-            let docId = null;
+            let docIdToDelete = null;
             
+            // Itera sobre los documentos para encontrar el que coincida con el ID del partido
             for (const document of querySnapshot.docs) {
-                const data = document.data();
-                if (Number(data.id) === matchIdNum) {
-                    docId = document.id;
+                if (Number(document.data().id) === matchIdNum) {
+                    docIdToDelete = document.id;
                     break;
                 }
             }
             
-            if (docId) {
-                console.log('Documento encontrado en Firestore, procediendo a eliminar:', docId);
-                await deleteDoc(doc(window.db, "partidos", docId));
+            if (docIdToDelete) {
+                await deleteDoc(doc(window.db, "partidos", docIdToDelete));
+                console.log('Partido eliminado de Firestore:', docIdToDelete);
             } else {
-                console.error('No se encontró el partido en Firestore:', matchIdNum);
-                throw new Error('Partido no encontrado en la base de datos');
+                // Si no se encuentra en Firestore, solo se registrará en la consola,
+                // pero el proceso continuará para eliminarlo localmente.
+                console.warn('No se encontró el partido en Firestore para eliminar:', matchIdNum);
             }
         }
         
-        // Eliminar partido local
+        // 3. Eliminar el partido del array local
         const matchIndex = matches.findIndex(m => Number(m.id) === matchIdNum);
         if (matchIndex === -1) {
-            console.error('Partido no encontrado localmente:', matchIdNum);
-            throw new Error('Partido no encontrado localmente');
+            // Si el partido no existe localmente, se lanza un error y se detiene el proceso.
+            throw new Error(`Partido no encontrado localmente: ${matchIdNum}`);
         }
         
         matches.splice(matchIndex, 1);
-        saveMatches();
+        saveMatches(); // Guarda el estado actualizado de los partidos en localStorage
         
-        console.log('Partido eliminado localmente, recalculando puntuaciones...');
+        console.log('Partido eliminado localmente. Recalculando todas las puntuaciones...');
         
-        // Recalcular puntuaciones
+        // 4. Recalcular TODAS las puntuaciones desde cero.
+        // Esto es crucial para mantener la integridad de los datos después de una eliminación.
         await recalculateAllRatings();
         
-        // Actualizar UI
+        // 5. Actualizar toda la interfaz de usuario para reflejar los cambios
         renderPlayersList();
         renderPlayersDropdown();
         renderRanking();
@@ -1283,70 +1312,18 @@ async function deleteMatch(matchId) {
         renderMatches();
         updateStats();
         
-        console.log('Proceso de eliminación completado exitosamente');
-        return true;
-        
-        // Recalcular basado en los partidos existentes
-        matches.forEach(match => {
-            updateRatings(match);
-        });
-        
-        // Actualizar todos los jugadores en Firebase
-        for (const player of players) {
-            await updatePlayerInFirestore(player);
-        }
-        
-        // Guardar cambios locales
-        savePlayers();
-        syncData();
-        
-        // Actualizar toda la UI
-        renderPlayersList();
-        renderPlayersDropdown();
-        renderRanking();
-        renderTeamRanking();
-        renderMatches();
-        updateStats();
+        console.log('Proceso de eliminación y actualización completado exitosamente.');
+
     } catch (error) {
+        // Si ocurre cualquier error, ahora solo se registrará en la consola.
         console.error('Error al eliminar el partido:', error);
-        alert('Error al eliminar el partido. Por favor, intenta de nuevo.');
     }
-    
-    // Reiniciar puntuaciones de todos los jugadores
-    players.forEach(player => {
-        player.rating = 0;
-        player.matches = 0;
-        player.wins = 0;
-        player.losses = 0;
-        player.pointsHistory = [];
-    });
-    
-    // Recalcular basado en los partidos existentes
-    matches.forEach(match => {
-        updateRatings(match);
-    });
-    
-    // Actualizar todos los jugadores en Firebase
-    players.forEach(player => {
-        updatePlayerInFirestore(player);
-    });
-    
-    // Guardar cambios locales
-    savePlayers();
-    syncData();
-    
-    // Actualizar toda la UI
-    renderPlayersList();
-    renderPlayersDropdown();
-    renderRanking();
-    renderTeamRanking();
-    renderMatches();
-    updateStats();
 }
 
+   
 // Recalcular todas las puntuaciones desde cero
-function recalculateAllRatings() {
-    // Reiniciar puntuaciones de todos los jugadores
+async function recalculateAllRatings() {
+    // 1. Reiniciar las estadísticas de todos los jugadores a cero.
     players.forEach(player => {
         player.rating = 0;
         player.matches = 0;
@@ -1355,24 +1332,25 @@ function recalculateAllRatings() {
         player.pointsHistory = [];
     });
     
-    // Recalcular basado en los partidos existentes
+    // 2. Recalcular las estadísticas iterando sobre los partidos restantes.
     matches.forEach(match => {
-        // Verificar que todos los jugadores existan antes de actualizar puntuaciones
-        const player1 = players.find(p => p.id === match.teamA[0]);
-        const player2 = players.find(p => p.id === match.teamA[1]);
-        const player3 = players.find(p => p.id === match.teamB[0]);
-        const player4 = players.find(p => p.id === match.teamB[1]);
+        const allPlayersExist = match.teamA.every(id => players.some(p => p.id === id)) &&
+                                match.teamB.every(id => players.some(p => p.id === id));
         
-        if (player1 && player2 && player3 && player4) {
-            updateRatings(match);
+        if (allPlayersExist) {
+            updateRatings(match); // Esta función es síncrona
         }
     });
     
+    // 3. Guardar los jugadores actualizados en el almacenamiento local.
     savePlayers();
-    // Actualizar todos los jugadores en Firestore
-    players.forEach(player => {
-        updatePlayerInFirestore(player);
-    });
+    
+    // 4. Actualizar todos los jugadores en Firestore.
+    const updatePromises = players.map(player => updatePlayerInFirestore(player));
+    
+    // Promise.all espera a que TODAS las promesas del array se completen.
+    await Promise.all(updatePromises);
+    console.log('Todos los jugadores han sido actualizados en Firestore.');
 }
 
 // Renderizar lista de jugadores
