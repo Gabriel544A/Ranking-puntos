@@ -719,8 +719,8 @@ button:hover {
 .global-top-player {
   position: relative;
   display: inline-block;
-  overflow: visible;
-  vertical-align: middle;
+  overflow: hidden;
+  vertical-align: baseline;
 }
 .global-top-player::after {
   content: "";
@@ -2436,12 +2436,45 @@ button:focus-visible { outline: 3px solid rgba(52,152,219,0.35); outline-offset:
   --info-700: #8e44ad;
 }
 
-.footer {
-  text-align: center;
-  padding: 12px;
-  margin-top: 30px;
-  font-size: 0.9rem;
-  color: #777;
-  font-style: italic;
-  border-top: 1px solid #e0e0e0;
+.footer{
+  text-align:center; padding:16px; margin-top:10px; color:#777; font-style:italic;
+  border-top: 1px dashed #e0e0e0; position:relative;
 }
+.footer::before{
+  content:""; position:absolute; left:50%; top:-6px; width:80px; height:12px;
+  transform:translateX(-50%); background:
+   radial-gradient(currentColor 2px, transparent 3px) left,
+   radial-gradient(currentColor 2px, transparent 3px) right;
+  background-size:12px 12px; background-repeat:no-repeat; opacity:.12;
+}
+.footer span {
+  position: relative;
+  font-weight: bold;
+  animation: rainbow 6s linear infinite;
+  cursor: pointer; /* opcional, para indicar que tiene efecto */
+}
+
+.footer span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background: currentColor; /* usa el mismo color que el texto */
+  transition: width 0.4s ease;
+}
+
+.footer span:hover::after {
+  width: 100%;
+}
+
+@keyframes rainbow {
+  0%   { color: #e74c3c; }   /* rojo */
+  20%  { color: #f39c12; }   /* naranja */
+  40%  { color: #f1c40f; }   /* amarillo */
+  60%  { color: #2ecc71; }   /* verde */
+  80%  { color: #3498db; }   /* azul */
+  100% { color: #9b59b6; }   /* violeta */
+}
+

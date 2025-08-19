@@ -314,41 +314,6 @@ function applyPlayerRankStyle(playerName, playerId) {
     return `<span class="player-name">${playerName}</span>`;
 }
 
-// Inyectar estilos para efecto de brillo intermitente de top players (una sola vez)
-(function injectTopPlayerStyles(){
-    if (typeof document === 'undefined') return;
-    if (document.getElementById('top-player-glow-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'top-player-glow-styles';
-    style.textContent = `
-        .global-top-player {
-            position: relative;
-            overflow: hidden;
-        }
-        .global-top-player::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -120%;
-            width: 120%;
-            height: 100%;
-            background: linear-gradient(110deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.55) 48%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.55) 52%, rgba(255,255,255,0) 70%);
-            transform: skewX(-20deg);
-            pointer-events: none;
-            animation: shimmerSweep 5s ease-in-out infinite;
-        }
-        @keyframes shimmerSweep {
-            0% { left: -120%; }
-            30% { left: 120%; }
-            100% { left: 120%; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .global-top-player::after { animation: none; }
-        }
-    `;
-    document.head.appendChild(style);
-})();
-
 // Renderizar el ranking de parejas
 function renderTeamRanking() {
     const tableBody = document.querySelector('#teamRankingTable tbody');
